@@ -22,3 +22,6 @@ Thumbs.db
 *.lib
 *.sbr
 Debug/
+SkeletonAnimation/SkeletonAnimation.sdf
+SkeletonAnimation/ipch/skeletonanimation-fbe3df01/skeletonanimation-6d583b71.ipch
+SkeletonAnimation/SkeletonAnimation.opensdf
