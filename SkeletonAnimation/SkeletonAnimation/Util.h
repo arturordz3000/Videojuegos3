@@ -1,6 +1,8 @@
 #ifndef _UTIL_H_INCLUDED
 #define _UTIL_H_INCLUDED
 
+#define _XM_NO_INTRINSICS_
+
 #include <string>
 #include <sstream>
 #include <math.h>
@@ -43,7 +45,7 @@ void TrimString(string &input, string trimChar)
 void GetMonitorResolution(int *width, int *height)
 {
 	RECT windowsize;    // get the height and width of the screen
-	bool succeded = GetClientRect(GetDesktopWindow(), &windowsize);
+	int succeded = GetClientRect(GetDesktopWindow(), &windowsize);
 	
 	if ( succeded )
 	{

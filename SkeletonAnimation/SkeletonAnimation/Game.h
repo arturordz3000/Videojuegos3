@@ -1,6 +1,8 @@
 #ifndef _GAME_H_INCLUDED
 #define _GAME_H_INCLUDED
 
+#define _XM_NO_INTRINSICS_
+
 #include "WinCreation.h"
 #include "GameLevel.h"
 #include "Util.h"
@@ -13,7 +15,7 @@ extern int g_nCmdShow;
 class Game;
 extern Game *g_Game;
 
-float lastTickTime = 0;
+DWORD lastTickTime = 0;
 float deltaTime = 0;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -24,7 +26,7 @@ private:
 
 	/* Propiedades de la ventana */
 	HWND	_hWND;
-	int _width, _height;
+	int		_width, _height;
 	bool	_isFullscreen;
 
 	/* Propiedades Direct3D */
@@ -98,6 +100,8 @@ public:
 
 			return (int) message.wParam;
 		}
+
+		return -1;
 	}
 
 	void Exit()
@@ -207,8 +211,8 @@ private:
 
 		// Creamos el viewport
 		D3D11_VIEWPORT d3dViewport;
-		d3dViewport.Width = _width;
-		d3dViewport.Height = _height;
+		d3dViewport.Width = (float)_width;
+		d3dViewport.Height = (float)_height;
 		d3dViewport.MinDepth = 0.0f;
 		d3dViewport.MaxDepth = 1.0f;
 		d3dViewport.TopLeftX = 0.0f;
@@ -294,8 +298,8 @@ private:
 		_swapChain->Present(1, 0);
 
 		/* Actualización de delta time */
-		float currentTickTime = GetTickCount();
-		deltaTime = currentTickTime - lastTickTime;
+		DWORD currentTickTime = GetTickCount();
+		deltaTime = (float)(currentTickTime - lastTickTime) / 1000.0f;
 		lastTickTime = currentTickTime;
 	}
 };

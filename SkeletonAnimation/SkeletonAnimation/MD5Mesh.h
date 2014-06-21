@@ -60,6 +60,13 @@ struct Mesh
 	Vertex *vertices;
 	Triangle *triangles;
 	Weight *weights;
+
+	~Mesh()
+	{
+		delete[] vertices;
+		delete[] triangles;
+		delete[] weights;
+	}
 };
 
 #pragma endregion
@@ -92,6 +99,22 @@ public:
 			ReadJoints(fileStream);
 			ReadMeshes(fileStream);
 		}
+	}
+
+	~MD5Mesh()
+	{
+		delete[] joints;
+		delete[] meshes;
+	}
+
+	void Update(float deltaTime)
+	{
+
+	}
+
+	void Draw(ID3D11DeviceContext *deviceContext)
+	{
+
 	}
 
 #pragma endregion
@@ -134,12 +157,12 @@ private:
 				this->joints[i].name = currentLineSplitted[0];
 				TrimString(this->joints[i].name, "\"");
 				this->joints[i].parent = atoi(currentLineSplitted[1].c_str());
-				this->joints[i].position.x = atof(currentLineSplitted[3].c_str());
-				this->joints[i].position.y = atof(currentLineSplitted[4].c_str());
-				this->joints[i].position.z = atof(currentLineSplitted[5].c_str());
-				this->joints[i].orientation.x = atof(currentLineSplitted[8].c_str());
-				this->joints[i].orientation.y = atof(currentLineSplitted[9].c_str());
-				this->joints[i].orientation.z = atof(currentLineSplitted[10].c_str());
+				this->joints[i].position.x = (float)atof(currentLineSplitted[3].c_str());
+				this->joints[i].position.y = (float)atof(currentLineSplitted[4].c_str());
+				this->joints[i].position.z = (float)atof(currentLineSplitted[5].c_str());
+				this->joints[i].orientation.x = (float)atof(currentLineSplitted[8].c_str());
+				this->joints[i].orientation.y = (float)atof(currentLineSplitted[9].c_str());
+				this->joints[i].orientation.z = (float)atof(currentLineSplitted[10].c_str());
 				this->joints[i].orientation.w = GetWComponent(this->joints[i].orientation);
 
 				i++;
@@ -190,8 +213,8 @@ private:
 						SplitString(currentLine, 8, vertLineSplitted);
 
 						this->meshes[i].vertices[j].vertexIndex = atoi(vertLineSplitted[1].c_str());
-						this->meshes[i].vertices[j].uv.x = atof(vertLineSplitted[3].c_str());
-						this->meshes[i].vertices[j].uv.y = atof(vertLineSplitted[4].c_str());
+						this->meshes[i].vertices[j].uv.x = (float)atof(vertLineSplitted[3].c_str());
+						this->meshes[i].vertices[j].uv.y = (float)atof(vertLineSplitted[4].c_str());
 						this->meshes[i].vertices[j].startWeight = atoi(vertLineSplitted[6].c_str());
 						this->meshes[i].vertices[j].countWeight = atoi(vertLineSplitted[7].c_str());
 					}
@@ -226,10 +249,10 @@ private:
 
 						this->meshes[i].weights[j].weightIndex = atoi(weightLineSplitted[1].c_str());
 						this->meshes[i].weights[j].joint = atoi(weightLineSplitted[2].c_str());
-						this->meshes[i].weights[j].bias = atof(weightLineSplitted[3].c_str());
-						this->meshes[i].weights[j].position.x = atof(weightLineSplitted[5].c_str());
-						this->meshes[i].weights[j].position.y = atof(weightLineSplitted[6].c_str());
-						this->meshes[i].weights[j].position.z = atof(weightLineSplitted[7].c_str());
+						this->meshes[i].weights[j].bias = (float)atof(weightLineSplitted[3].c_str());
+						this->meshes[i].weights[j].position.x = (float)atof(weightLineSplitted[5].c_str());
+						this->meshes[i].weights[j].position.y = (float)atof(weightLineSplitted[6].c_str());
+						this->meshes[i].weights[j].position.z = (float)atof(weightLineSplitted[7].c_str());
 					}
 				}
 			}
