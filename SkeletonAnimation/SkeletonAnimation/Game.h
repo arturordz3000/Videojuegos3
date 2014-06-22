@@ -75,7 +75,7 @@ public:
 	{
 		if ( InitWindowAndGraphics() )
 		{
-			_gameLevel = new SimpleRenderLevel();
+			_gameLevel = new SimpleRenderLevel(_device);
 
 			MSG message;
 

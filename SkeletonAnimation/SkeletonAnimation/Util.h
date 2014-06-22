@@ -7,6 +7,7 @@
 #include <sstream>
 #include <math.h>
 #include <xnamath.h>
+#include <D3Dcompiler.h>
 
 using namespace std;
 
@@ -52,6 +53,31 @@ void GetMonitorResolution(int *width, int *height)
 		*width = windowsize.right - windowsize.left;
 		*height = windowsize.bottom - windowsize.top;
 	}
+}
+
+bool CompileD3DShader(LPCSTR filePath, char* entry, char* shaderModel, ID3DBlob** buffer)
+{
+	DWORD shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+
+	ID3DBlob* errorBuffer = 0;
+	HRESULT result;
+
+	result = D3DX11CompileFromFile(filePath, 0, 0, entry, shaderModel, shaderFlags,
+		0, 0, buffer, &errorBuffer, 0);
+	if(FAILED(result))
+	{
+		if(errorBuffer != 0)
+		{
+			OutputDebugStringA((char*)errorBuffer->GetBufferPointer());
+			errorBuffer->Release();
+		}
+		return false;
+	}
+
+	if(errorBuffer != 0)
+		errorBuffer->Release();
+
+	return true;
 }
 
 #endif

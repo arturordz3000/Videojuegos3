@@ -10,6 +10,7 @@
 #include <d3dx11.h>
 #include <xnamath.h>
 #include "Util.h"
+#include "Game.h"
 
 #pragma endregion
 
@@ -51,6 +52,12 @@ struct Weight
 	XMFLOAT3 position;
 };
 
+struct ShaderVertex
+{
+	float position[3];
+	float uv[2];
+}
+
 struct Mesh
 {
 	string shader;
@@ -60,6 +67,9 @@ struct Mesh
 	Vertex *vertices;
 	Triangle *triangles;
 	Weight *weights;
+
+	ID3D11Buffer *vertexBuffer;
+	ID3D11Buffer *indexBuffer;
 
 	~Mesh()
 	{
@@ -83,6 +93,10 @@ private:
 	Joint *joints;
 	Mesh *meshes;
 
+	ID3D11VertexShader *vertexShader;
+	ID3D11PixelShader *pixelShader;
+	ID3D11InputLayout *inputLayout;
+
 #pragma endregion
 
 #pragma region Public methods
@@ -91,6 +105,7 @@ public:
 	MD5Mesh(string filename)
 	{
 		this->filename = filename;
+
 		ifstream fileStream(filename, ifstream::in);
 		
 		if (fileStream.is_open())
@@ -105,6 +120,95 @@ public:
 	{
 		delete[] joints;
 		delete[] meshes;
+	}
+
+	bool CompileShaders(ID3D11Device *device)
+	{
+		ID3DBlob *vertexShaderBlob;
+		ID3DBlob *pixelShaderBlob;
+		HRESULT d3dResult;
+		bool compileResult;
+
+		// Compilando vertex shader
+		compileResult = CompileD3DShader("TestShader.fx", "VS_Main", "vs_4_0", &vertexShaderBlob);
+		if ( !compileResult )
+			return false;
+
+		d3dResult = device->CreateVertexShader(vertexShaderBlob->GetBufferPointer(), 
+											   vertexShaderBlob->GetBufferSize(),
+											   0, 
+											   &vertexShader);
+		if ( FAILED(d3dResult) )
+		{
+			if ( vertexShaderBlob )
+				vertexShaderBlob->Release();
+
+			return false;
+		}
+		
+		// Creando el input layout
+		D3D11_INPUT_ELEMENT_DESC solidColorLayout[] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
+
+		unsigned int totalLayoutElements = ARRAYSIZE(solidColorLayout);
+		d3dResult = device->CreateInputLayout(solidColorLayout, 
+											  totalLayoutElements,
+											  vertexShaderBlob->GetBufferPointer( ), 
+											  vertexShaderBlob->GetBufferSize( ),
+											  &inputLayout );
+
+		if ( FAILED(d3dResult) )
+		{
+			if ( vertexShaderBlob )
+				vertexShaderBlob->Release();
+
+			return false;
+		}
+
+		// Compilando pixel shader
+		compileResult = CompileD3DShader("TestShader.fx", "PS_Main", "vs_4_0", &pixelShaderBlob);
+		if ( !compileResult )
+			return false;
+
+		d3dResult = device->CreatePixelShader(pixelShaderBlob->GetBufferPointer(), 
+											   pixelShaderBlob->GetBufferSize(),
+											   0, 
+											   &pixelShader);
+		if ( FAILED(d3dResult) )
+		{
+			if ( pixelShaderBlob )
+				pixelShaderBlob->Release();
+
+			return false;
+		}
+
+		return true;
+	}
+
+	bool CreateVertexAndIndexBuffers(ID3D11Device *device)
+	{
+		for (int i = 0; i < numMeshes; i++)
+		{
+			Mesh *mesh = &meshes[i];
+
+			for (int j = 0; i < mesh->numVertices; j++)
+			{
+
+			}
+		}
+
+		return true;
+	}
+
+	bool PrepareGraphicResources(ID3D11Device *device)
+	{
+		if ( !CompileShaders(device) )
+			return false;
+		if ( !CreateVertexAndIndexBuffers(device) )
+			return false;
 	}
 
 	void Update(float deltaTime)

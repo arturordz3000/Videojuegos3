@@ -4,7 +4,11 @@
 
 class GameLevel
 {
+protected:
+	ID3D11Device *_device;
+
 public:
+	GameLevel(ID3D11Device *device) { _device = device; }
 	virtual void Update(float deltaTime){}
 	virtual void Draw(ID3D11DeviceContext *deviceContext){}
 };
@@ -17,9 +21,11 @@ private:
 	Camera *camera;
 
 public:
-	SimpleRenderLevel()
+	SimpleRenderLevel(ID3D11Device *device) : GameLevel(device)
 	{
 		mesh = new MD5Mesh("C:\\Model\\bob_lamp_update.md5mesh");
+		//mesh->PrepareGraphicResources(this->_device);
+
 		camera = new Camera(XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(.05f, .05f, .05f));
 	}
 
