@@ -36,6 +36,8 @@ struct Vertex
 	int startWeight;
 	int countWeight;
 
+	int timesUsed;
+
 	XMFLOAT3 position;
 	XMFLOAT2 uv;
 	XMFLOAT3 normal;
@@ -191,41 +193,8 @@ public:
 		for (int i = 0; i < numMeshes; i++)
 		{
 			Mesh *currentMesh = &meshes[i];
-
-			for (int j = 0; j < currentMesh->numVertices; j++)
-			{
-				Vertex *currentVertex = &currentMesh->vertices[j];
-				currentVertex->position = XMFLOAT3(0, 0, 0);
-
-				for (int k = 0; k < currentVertex->countWeight; k++)
-				{
-					Weight *currentWeight = &currentMesh->weights[currentVertex->startWeight + k];
-					Joint *currentJoint = &this->joints[currentWeight->joint];
-
-					XMVECTOR jointOrientation = XMVectorSet(
-						currentJoint->orientation.x,
-						currentJoint->orientation.y,
-						currentJoint->orientation.z,
-						currentJoint->orientation.w);
-
-					XMVECTOR weightPosition = XMVectorSet(
-						currentWeight->position.x,
-						currentWeight->position.y,
-						currentWeight->position.z,
-						0);
-
-					XMVECTOR jointConjugatedOrientation = XMVectorSet(
-						-currentJoint->orientation.x,
-						-currentJoint->orientation.y,
-						-currentJoint->orientation.z,
-						currentJoint->orientation.w);
-
-					XMFLOAT3 rotatedVertex;
-					XMStoreFloat3(&rotatedVertex, XMQuaternionMultiply(XMQuaternionMultiply(jointOrientation, weightPosition), jointConjugatedOrientation));
-
-					currentVertex->position.x += ( currentJoint->position.x + rotatedVertex.x) * currentWeight->bias;
-				}
-			}
+			ComputeVerticesPositions(currentMesh);
+			ComputeNormals(currentMesh);
 		}
 
 		return true;
@@ -254,6 +223,89 @@ public:
 #pragma region Private methods
 
 private:
+	void ComputeVerticesPositions(Mesh *currentMesh)
+	{
+		for (int j = 0; j < currentMesh->numVertices; j++)
+		{
+			Vertex *currentVertex = &currentMesh->vertices[j];
+			currentVertex->position = XMFLOAT3(0, 0, 0);
+
+			for (int k = 0; k < currentVertex->countWeight; k++)
+			{
+				Weight *currentWeight = &currentMesh->weights[currentVertex->startWeight + k];
+				Joint *currentJoint = &this->joints[currentWeight->joint];
+
+				XMVECTOR jointOrientation = XMVectorSet(
+					currentJoint->orientation.x,
+					currentJoint->orientation.y,
+					currentJoint->orientation.z,
+					currentJoint->orientation.w);
+
+				XMVECTOR weightPosition = XMVectorSet(
+					currentWeight->position.x,
+					currentWeight->position.y,
+					currentWeight->position.z,
+					0);
+
+				XMVECTOR jointConjugatedOrientation = XMVectorSet(
+					-currentJoint->orientation.x,
+					-currentJoint->orientation.y,
+					-currentJoint->orientation.z,
+					currentJoint->orientation.w);
+
+				XMFLOAT3 rotatedVertex;
+				XMStoreFloat3(&rotatedVertex, XMQuaternionMultiply(XMQuaternionMultiply(jointOrientation, weightPosition), jointConjugatedOrientation));
+
+				currentVertex->position.x += ( currentJoint->position.x + rotatedVertex.x) * currentWeight->bias;
+				currentVertex->position.y += ( currentJoint->position.y + rotatedVertex.y) * currentWeight->bias;
+				currentVertex->position.z += ( currentJoint->position.z + rotatedVertex.z) * currentWeight->bias;
+			}
+		}
+	}
+
+	void ComputeNormals(Mesh *currentMesh)
+	{
+		XMVECTOR edge1 = XMVectorSet(0, 0, 0, 0);
+		XMVECTOR edge2 = XMVectorSet(0, 0, 0, 0);
+		float edgeX, edgeY, edgeZ;
+		Vertex *vertex1, *vertex2, *vertex3;
+
+		for (int i = 0; i < currentMesh->numTriangles; i++)
+		{
+			vertex1 = &currentMesh->vertices[currentMesh->triangles[i].vertexIndices[0]];
+			vertex2 = &currentMesh->vertices[currentMesh->triangles[i].vertexIndices[1]];
+			vertex3 = &currentMesh->vertices[currentMesh->triangles[i].vertexIndices[2]];
+
+			edgeX = vertex1->position.x - vertex3->position.x;
+			edgeY = vertex1->position.y - vertex3->position.y;
+			edgeZ = vertex1->position.z - vertex3->position.z;
+			edge1 = XMVectorSet(edgeX, edgeY, edgeZ, 0);
+
+			edgeX = vertex2->position.x - vertex3->position.x;
+			edgeY = vertex2->position.y - vertex3->position.y;
+			edgeZ = vertex2->position.z - vertex3->position.z;
+			edge2 = XMVectorSet(edgeX, edgeY, edgeZ, 0);
+
+			XMFLOAT3 normal;
+			XMStoreFloat3(&normal, XMVector3Cross(edge1, edge2));
+			vertex1->normal = XMFLOAT3(vertex1->normal.x + normal.x, vertex1->normal.y + normal.y, vertex1->normal.z + normal.z);
+			vertex2->normal = XMFLOAT3(vertex2->normal.x + normal.x, vertex2->normal.y + normal.y, vertex2->normal.z + normal.z);
+
+			vertex1->timesUsed++;
+			vertex2->timesUsed++;
+		}
+
+		for (int i = 0; i < currentMesh->numVertices; i++)
+		{
+			Vertex *currentVertex = &currentMesh->vertices[i];
+			XMVECTOR normalSum = XMVectorSet(currentVertex->normal.x, currentVertex->normal.y, currentVertex->normal.z, 0);
+			normalSum = XMVector3Normalize(normalSum / currentVertex->timesUsed);
+			currentVertex->normal.x = XMVectorGetX(normalSum);
+			currentVertex->normal.y = XMVectorGetY(normalSum);
+			currentVertex->normal.z = XMVectorGetZ(normalSum);
+		}
+	}
+
 	void ReadNumJointsAndMeshes(ifstream &fileStream)
 	{
 		string currentLine;
