@@ -33,9 +33,13 @@ struct Joint
 struct Vertex
 {
 	int vertexIndex;
-	XMFLOAT2 uv;
 	int startWeight;
 	int countWeight;
+
+	XMFLOAT3 position;
+	XMFLOAT2 uv;
+	XMFLOAT3 normal;
+	XMFLOAT3 tangent;
 };
 
 struct Triangle
@@ -51,12 +55,6 @@ struct Weight
 	float bias;
 	XMFLOAT3 position;
 };
-
-struct ShaderVertex
-{
-	float position[3];
-	float uv[2];
-}
 
 struct Mesh
 {
@@ -192,11 +190,41 @@ public:
 	{
 		for (int i = 0; i < numMeshes; i++)
 		{
-			Mesh *mesh = &meshes[i];
+			Mesh *currentMesh = &meshes[i];
 
-			for (int j = 0; i < mesh->numVertices; j++)
+			for (int j = 0; j < currentMesh->numVertices; j++)
 			{
+				Vertex *currentVertex = &currentMesh->vertices[j];
+				currentVertex->position = XMFLOAT3(0, 0, 0);
 
+				for (int k = 0; k < currentVertex->countWeight; k++)
+				{
+					Weight *currentWeight = &currentMesh->weights[currentVertex->startWeight + k];
+					Joint *currentJoint = &this->joints[currentWeight->joint];
+
+					XMVECTOR jointOrientation = XMVectorSet(
+						currentJoint->orientation.x,
+						currentJoint->orientation.y,
+						currentJoint->orientation.z,
+						currentJoint->orientation.w);
+
+					XMVECTOR weightPosition = XMVectorSet(
+						currentWeight->position.x,
+						currentWeight->position.y,
+						currentWeight->position.z,
+						0);
+
+					XMVECTOR jointConjugatedOrientation = XMVectorSet(
+						-currentJoint->orientation.x,
+						-currentJoint->orientation.y,
+						-currentJoint->orientation.z,
+						currentJoint->orientation.w);
+
+					XMFLOAT3 rotatedVertex;
+					XMStoreFloat3(&rotatedVertex, XMQuaternionMultiply(XMQuaternionMultiply(jointOrientation, weightPosition), jointConjugatedOrientation));
+
+					currentVertex->position.x += ( currentJoint->position.x + rotatedVertex.x) * currentWeight->bias;
+				}
 			}
 		}
 
