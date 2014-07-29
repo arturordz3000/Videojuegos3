@@ -1,6 +1,6 @@
 #include <D3D11.h>
-#include "MD5Mesh.h"
 #include "Camera.h"
+#include "MD5Mesh.h"
 
 class GameLevel
 {
@@ -24,9 +24,9 @@ public:
 	SimpleRenderLevel(ID3D11Device *device) : GameLevel(device)
 	{
 		mesh = new MD5Mesh("C:\\Model\\bob_lamp_update.md5mesh");
-		//mesh->PrepareGraphicResources(this->_device);
+		mesh->PrepareGraphicResources(this->_device);
 
-		camera = new Camera(XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(.05f, .05f, .05f));
+		camera = new Camera(XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(.05f, .05f, .05f), 800, 640);
 	}
 
 	~SimpleRenderLevel()
@@ -36,7 +36,7 @@ public:
 
 	void Update(float deltaTime)
 	{
-		mesh->Update(deltaTime);
+		mesh->Update(deltaTime, camera);
 	}
 
 	void Draw(ID3D11DeviceContext *deviceContext)

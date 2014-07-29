@@ -87,10 +87,11 @@ private:
 	}
 	
 	XMMATRIX viewMatrix;
+	XMMATRIX projectionMatrix;
 
 public:
 
-	Camera(XMFLOAT3 movementVelocity, XMFLOAT3 rotationVelocity)
+	Camera(XMFLOAT3 movementVelocity, XMFLOAT3 rotationVelocity, int width, int height)
 	{
 		// Inicializacion de la velocidad de movimiento y rotacion
 		this->movementVelocity.xVelocity = XMLoadFloat3( &XMFLOAT3(movementVelocity.x, 0, 0) );
@@ -107,7 +108,11 @@ public:
 
 		viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
 		viewMatrix = XMMatrixTranspose( viewMatrix );
+
+		projectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, (FLOAT) width / (FLOAT) height, 0.01f, 1000.0f );
 	}
+
+	XMMATRIX GetProjectionMatrix() { return projectionMatrix; }
 
 	void SetPositionY(float y)
 	{

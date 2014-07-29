@@ -104,6 +104,9 @@ public:
 		return -1;
 	}
 
+	int GetScreenWidth() { return _width; }
+	int GetScreenHeight() { return _height; }
+
 	void Exit()
 	{
 		_gameIsRunning = false;

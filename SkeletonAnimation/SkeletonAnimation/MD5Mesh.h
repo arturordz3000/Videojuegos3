@@ -11,6 +11,7 @@
 #include <xnamath.h>
 #include "Util.h"
 #include "Game.h"
+#include "Camera.h"
 
 #pragma endregion
 
@@ -32,16 +33,16 @@ struct Joint
 
 struct Vertex
 {
+	XMFLOAT3 position;
+	XMFLOAT2 uv;
+	XMFLOAT3 normal;
+	XMFLOAT3 tangent;
+
 	int vertexIndex;
 	int startWeight;
 	int countWeight;
 
 	int timesUsed;
-
-	XMFLOAT3 position;
-	XMFLOAT2 uv;
-	XMFLOAT3 normal;
-	XMFLOAT3 tangent;
 };
 
 struct Triangle
@@ -67,6 +68,7 @@ struct Mesh
 	Vertex *vertices;
 	Triangle *triangles;
 	Weight *weights;
+	int *indices;
 
 	ID3D11Buffer *vertexBuffer;
 	ID3D11Buffer *indexBuffer;
@@ -77,6 +79,13 @@ struct Mesh
 		delete[] triangles;
 		delete[] weights;
 	}
+};
+
+struct MatrixBuffer
+{
+	XMMATRIX world;
+	XMMATRIX view;
+	XMMATRIX projection;
 };
 
 #pragma endregion
@@ -96,6 +105,14 @@ private:
 	ID3D11VertexShader *vertexShader;
 	ID3D11PixelShader *pixelShader;
 	ID3D11InputLayout *inputLayout;
+	ID3D11Buffer *constantBuffer;
+
+	XMFLOAT3 translation;
+	XMFLOAT3 rotation;
+	XMFLOAT3 scale;
+	XMMATRIX world;
+
+	MatrixBuffer matrixBuffer;
 
 #pragma endregion
 
@@ -150,7 +167,9 @@ public:
 		D3D11_INPUT_ELEMENT_DESC solidColorLayout[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },			  
+			{ "NORMAL",	 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 		};
 
 		unsigned int totalLayoutElements = ARRAYSIZE(solidColorLayout);
@@ -188,17 +207,7 @@ public:
 		return true;
 	}
 
-	bool CreateVertexAndIndexBuffers(ID3D11Device *device)
-	{
-		for (int i = 0; i < numMeshes; i++)
-		{
-			Mesh *currentMesh = &meshes[i];
-			ComputeVerticesPositions(currentMesh);
-			ComputeNormals(currentMesh);
-		}
-
-		return true;
-	}
+	
 
 	bool PrepareGraphicResources(ID3D11Device *device)
 	{
@@ -206,11 +215,16 @@ public:
 			return false;
 		if ( !CreateVertexAndIndexBuffers(device) )
 			return false;
+
+		return true;
 	}
 
-	void Update(float deltaTime)
+	void Update(float deltaTime, Camera *camera)
 	{
-
+		this->world = XMMatrixTranslation(0, 0, 2);
+		matrixBuffer.world		= XMMatrixTranspose( this->world );
+		matrixBuffer.view		= camera->GetViewMatrix();
+		matrixBuffer.projection = camera->GetProjectionMatrix();
 	}
 
 	void Draw(ID3D11DeviceContext *deviceContext)
@@ -223,6 +237,65 @@ public:
 #pragma region Private methods
 
 private:
+	bool CreateVertexAndIndexBuffers(ID3D11Device *device)
+	{
+		for (int i = 0; i < numMeshes; i++)
+		{
+			Mesh *currentMesh = &meshes[i];
+			ComputeVerticesPositions(currentMesh);
+			ComputeNormals(currentMesh);
+
+			HRESULT result;
+
+			// Creamos el index buffer
+			D3D11_BUFFER_DESC indexBufferDesc;
+			ZeroMemory( &indexBufferDesc, sizeof(indexBufferDesc) );
+
+			indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			indexBufferDesc.ByteWidth = sizeof(int) * currentMesh->numTriangles * 3;
+			indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+			indexBufferDesc.CPUAccessFlags = 0;
+			indexBufferDesc.MiscFlags = 0;
+
+			D3D11_SUBRESOURCE_DATA iinitData;
+			iinitData.pSysMem = &currentMesh->indices[0];
+			result = device->CreateBuffer(&indexBufferDesc, &iinitData, &currentMesh->indexBuffer);
+
+			if ( FAILED(result) ) return false;
+
+			//Creamos el vertex buffer
+			D3D11_BUFFER_DESC vertexBufferDesc;
+			ZeroMemory( &vertexBufferDesc, sizeof(vertexBufferDesc) );
+
+			vertexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;							// We will be updating this buffer, so we must set as dynamic
+			vertexBufferDesc.ByteWidth = sizeof( Vertex ) * currentMesh->numVertices;
+			vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+			vertexBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;				// Give CPU power to write to buffer
+			vertexBufferDesc.MiscFlags = 0;
+
+			D3D11_SUBRESOURCE_DATA vertexBufferData; 
+			ZeroMemory( &vertexBufferData, sizeof(vertexBufferData) );
+			vertexBufferData.pSysMem = &currentMesh->vertices[0];
+			result = device->CreateBuffer( &vertexBufferDesc, &vertexBufferData, &currentMesh->vertexBuffer);
+
+			if ( FAILED(result) ) return false;
+
+			D3D11_BUFFER_DESC d3dBufferDescriptor;
+			ZeroMemory( &d3dBufferDescriptor, sizeof(d3dBufferDescriptor) );
+
+			// Creamos el constant buffer
+			d3dBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
+			d3dBufferDescriptor.ByteWidth = sizeof(MatrixBuffer);
+			d3dBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			d3dBufferDescriptor.CPUAccessFlags = 0;
+			result = device->CreateBuffer( &d3dBufferDescriptor, NULL, &this->constantBuffer );
+
+			if( FAILED(result) )return false;
+		}
+
+		return true;
+	}
+
 	void ComputeVerticesPositions(Mesh *currentMesh)
 	{
 		for (int j = 0; j < currentMesh->numVertices; j++)
@@ -290,9 +363,11 @@ private:
 			XMStoreFloat3(&normal, XMVector3Cross(edge1, edge2));
 			vertex1->normal = XMFLOAT3(vertex1->normal.x + normal.x, vertex1->normal.y + normal.y, vertex1->normal.z + normal.z);
 			vertex2->normal = XMFLOAT3(vertex2->normal.x + normal.x, vertex2->normal.y + normal.y, vertex2->normal.z + normal.z);
+			vertex3->normal = XMFLOAT3(vertex3->normal.x + normal.x, vertex3->normal.y + normal.y, vertex3->normal.z + normal.z);
 
 			vertex1->timesUsed++;
 			vertex2->timesUsed++;
+			vertex3->timesUsed++;
 		}
 
 		for (int i = 0; i < currentMesh->numVertices; i++)
@@ -407,6 +482,7 @@ private:
 				{
 					this->meshes[i].numTriangles = atoi(currentLineSplitted[1].c_str());
 					this->meshes[i].triangles = new Triangle[this->meshes[i].numTriangles];
+					this->meshes[i].indices	  = new int[this->meshes[i].numTriangles * 3];
 
 					for (int j = 0; j < this->meshes[i].numTriangles; j++)
 					{
@@ -415,9 +491,9 @@ private:
 						SplitString(currentLine, 5, triLineSplitted);
 						
 						this->meshes[i].triangles[j].triangleIndex = atoi(triLineSplitted[1].c_str());
-						this->meshes[i].triangles[j].vertexIndices[0] = atoi(triLineSplitted[2].c_str());
-						this->meshes[i].triangles[j].vertexIndices[1] = atoi(triLineSplitted[3].c_str());
-						this->meshes[i].triangles[j].vertexIndices[2] = atoi(triLineSplitted[4].c_str());
+						this->meshes[i].indices[j * 3] = this->meshes[i].triangles[j].vertexIndices[0] = atoi(triLineSplitted[2].c_str());
+						this->meshes[i].indices[j * 3 + 1] = this->meshes[i].triangles[j].vertexIndices[1] = atoi(triLineSplitted[3].c_str());
+						this->meshes[i].indices[j * 3 + 2] = this->meshes[i].triangles[j].vertexIndices[2] = atoi(triLineSplitted[4].c_str());
 					}
 				}
 				else if (currentLineSplitted[0] == "numweights")

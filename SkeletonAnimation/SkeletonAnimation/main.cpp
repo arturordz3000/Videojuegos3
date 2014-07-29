@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "Game.h"
+#include "Camera.h"
 #include "MD5Mesh.h"
 
 int g_nCmdShow;
