@@ -72,6 +72,7 @@ struct Mesh
 
 	ID3D11Buffer *vertexBuffer;
 	ID3D11Buffer *indexBuffer;
+	ID3D11ShaderResourceView *colorMap;
 
 	~Mesh()
 	{
@@ -106,6 +107,7 @@ private:
 	ID3D11PixelShader *pixelShader;
 	ID3D11InputLayout *inputLayout;
 	ID3D11Buffer *constantBuffer;
+	ID3D11SamplerState *colorMapSampler;
 
 	XMFLOAT3 translation;
 	XMFLOAT3 rotation;
@@ -147,7 +149,7 @@ public:
 		bool compileResult;
 
 		// Compilando vertex shader
-		compileResult = CompileD3DShader("TestShader.fx", "VS_Main", "vs_4_0", &vertexShaderBlob);
+		compileResult = CompileD3DShader("Shaders\\TestShader.fx", "VS_Main", "vs_4_0", &vertexShaderBlob);
 		if ( !compileResult )
 			return false;
 
@@ -207,13 +209,11 @@ public:
 		return true;
 	}
 
-	
-
 	bool PrepareGraphicResources(ID3D11Device *device)
 	{
 		if ( !CompileShaders(device) )
 			return false;
-		if ( !CreateVertexAndIndexBuffers(device) )
+		if ( !CreateDirectXResources(device) )
 			return false;
 
 		return true;
@@ -229,7 +229,26 @@ public:
 
 	void Draw(ID3D11DeviceContext *deviceContext)
 	{
+		deviceContext->IASetInputLayout( this->inputLayout );
+		deviceContext->VSSetShader( this->vertexShader, NULL, 0 );
+		deviceContext->PSSetShader( this->pixelShader, NULL, 0 );
+		deviceContext->VSSetConstantBuffers( 0, 1, &this->constantBuffer );
+		deviceContext->PSSetSamplers( 0, 1, &this->colorMapSampler );
 
+		UINT uiStride = 44;
+		UINT uiOffset = 0;
+
+		for (int i = 0; i < numMeshes; i++)
+		{
+			Mesh *currentMesh = &meshes[i];
+			
+			deviceContext->PSSetShaderResources( 0, 1, &currentMesh->colorMap );
+			deviceContext->UpdateSubresource(this->constantBuffer, 0, NULL, &this->matrixBuffer, 0, 0);
+			deviceContext->IASetVertexBuffers( 0, 1,  &currentMesh->vertexBuffer, &uiStride, &uiOffset );
+			deviceContext->IASetIndexBuffer( currentMesh->indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
+			deviceContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );	
+			deviceContext->DrawIndexed( currentMesh->numTriangles * 3, 0, 0 );
+		}
 	}
 
 #pragma endregion
@@ -237,7 +256,7 @@ public:
 #pragma region Private methods
 
 private:
-	bool CreateVertexAndIndexBuffers(ID3D11Device *device)
+	bool CreateDirectXResources(ID3D11Device *device)
 	{
 		for (int i = 0; i < numMeshes; i++)
 		{
@@ -278,20 +297,37 @@ private:
 			vertexBufferData.pSysMem = &currentMesh->vertices[0];
 			result = device->CreateBuffer( &vertexBufferDesc, &vertexBufferData, &currentMesh->vertexBuffer);
 
-			if ( FAILED(result) ) return false;
+			if ( FAILED(result) ) return false;			
 
-			D3D11_BUFFER_DESC d3dBufferDescriptor;
-			ZeroMemory( &d3dBufferDescriptor, sizeof(d3dBufferDescriptor) );
+			result = D3DX11CreateShaderResourceViewFromFile( device, (currentMesh->shader + ".tga").c_str(), 0, 0, &currentMesh->colorMap, 0 );
 
-			// Creamos el constant buffer
-			d3dBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
-			d3dBufferDescriptor.ByteWidth = sizeof(MatrixBuffer);
-			d3dBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			d3dBufferDescriptor.CPUAccessFlags = 0;
-			result = device->CreateBuffer( &d3dBufferDescriptor, NULL, &this->constantBuffer );
-
-			if( FAILED(result) )return false;
+			if( FAILED(result) ) return false;
 		}
+
+		D3D11_BUFFER_DESC d3dBufferDescriptor;
+		ZeroMemory( &d3dBufferDescriptor, sizeof(d3dBufferDescriptor) );
+
+		// Creamos el constant buffer
+		d3dBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
+		d3dBufferDescriptor.ByteWidth = sizeof(MatrixBuffer);
+		d3dBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		d3dBufferDescriptor.CPUAccessFlags = 0;
+		HRESULT result = device->CreateBuffer( &d3dBufferDescriptor, NULL, &this->constantBuffer );
+
+		if( FAILED(result) ) return false;
+
+		D3D11_SAMPLER_DESC colorMapDesc;
+		ZeroMemory( &colorMapDesc, sizeof( colorMapDesc ) );
+		colorMapDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		colorMapDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		colorMapDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		colorMapDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		colorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		colorMapDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		result = device->CreateSamplerState( &colorMapDesc, &colorMapSampler );
+
+		if( FAILED(result) ) return false;
 
 		return true;
 	}
