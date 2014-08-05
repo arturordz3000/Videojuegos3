@@ -4,9 +4,10 @@
 #define _XM_NO_INTRINSICS_
 
 #include "WinCreation.h"
+#include <d3dx11.h>
+#include <D3D11.h>
 #include "GameLevel.h"
 #include "Util.h"
-#include <D3D11.h>
 
 extern HINSTANCE g_hInstance;
 extern HINSTANCE g_hPrevInstance;

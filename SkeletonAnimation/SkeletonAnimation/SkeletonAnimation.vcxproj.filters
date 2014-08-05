@@ -26,9 +26,6 @@
     <ClInclude Include="WinCreation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MD5Mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
