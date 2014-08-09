@@ -9,6 +9,7 @@
 #include <d3d11.h>
 #include <d3dx11.h>
 #include <xnamath.h>
+#include <vector>
 #include "Util.h"
 #include "Game.h"
 #include "Camera.h"
@@ -65,10 +66,10 @@ struct Mesh
 	int numVertices;
 	int numTriangles;
 	int numWeights;
-	Vertex *vertices;
-	Triangle *triangles;
-	Weight *weights;
-	int *indices;
+	vector<Vertex> vertices;
+	vector<Triangle> triangles;
+	vector<Weight> weights;
+	vector<int> indices;
 
 	ID3D11Buffer *vertexBuffer;
 	ID3D11Buffer *indexBuffer;
@@ -76,9 +77,9 @@ struct Mesh
 
 	~Mesh()
 	{
-		delete[] vertices;
-		delete[] triangles;
-		delete[] weights;
+		vertices.clear();
+		triangles.clear();
+		weights.clear();
 	}
 };
 
@@ -100,8 +101,8 @@ private:
 
 	int numJoints;
 	int numMeshes;
-	Joint *joints;
-	Mesh *meshes;
+	vector<Joint> joints;
+	vector<Mesh> meshes;
 
 	ID3D11VertexShader *vertexShader;
 	ID3D11PixelShader *pixelShader;
@@ -137,8 +138,8 @@ public:
 
 	~MD5Mesh()
 	{
-		delete[] joints;
-		delete[] meshes;
+		joints.clear();
+		meshes.clear();
 	}
 
 	bool CompileShaders(ID3D11Device *device)
@@ -278,7 +279,7 @@ private:
 			indexBufferDesc.MiscFlags = 0;
 
 			D3D11_SUBRESOURCE_DATA iinitData;
-			iinitData.pSysMem = currentMesh->indices;
+			iinitData.pSysMem = currentMesh->indices.data();
 			result = device->CreateBuffer(&indexBufferDesc, &iinitData, &currentMesh->indexBuffer);
 
 			if ( FAILED(result) ) return false;
@@ -295,7 +296,7 @@ private:
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData; 
 			ZeroMemory( &vertexBufferData, sizeof(vertexBufferData) );
-			vertexBufferData.pSysMem = currentMesh->vertices;
+			vertexBufferData.pSysMem = currentMesh->vertices.data();
 			result = device->CreateBuffer( &vertexBufferDesc, &vertexBufferData, &currentMesh->vertexBuffer);
 
 			if ( FAILED(result) ) return false;			
@@ -443,26 +444,29 @@ private:
 	{
 		string currentLine;
 		bool isJointsZone = false;
-		this->joints = new Joint[this->numJoints];
+		//this->joints = new Joint[this->numJoints];
 		int i = 0;
 
 		while (getline(fileStream, currentLine) && i < this->numJoints)
 		{
 			if (isJointsZone)
 			{
+				Joint joint;
 				string *currentLineSplitted = new string[12];			
 				SplitString(currentLine, 12, currentLineSplitted);
 
-				this->joints[i].name = currentLineSplitted[0];
-				TrimString(this->joints[i].name, "\"");
-				this->joints[i].parent = atoi(currentLineSplitted[1].c_str());
-				this->joints[i].position.x = (float)atof(currentLineSplitted[3].c_str());
-				this->joints[i].position.y = (float)atof(currentLineSplitted[4].c_str());
-				this->joints[i].position.z = (float)atof(currentLineSplitted[5].c_str());
-				this->joints[i].orientation.x = (float)atof(currentLineSplitted[8].c_str());
-				this->joints[i].orientation.y = (float)atof(currentLineSplitted[9].c_str());
-				this->joints[i].orientation.z = (float)atof(currentLineSplitted[10].c_str());
-				this->joints[i].orientation.w = GetWComponent(this->joints[i].orientation);
+				joint.name = currentLineSplitted[0];
+				TrimString(joint.name, "\"");
+				joint.parent = atoi(currentLineSplitted[1].c_str());
+				joint.position.x = (float)atof(currentLineSplitted[3].c_str());
+				joint.position.z = (float)atof(currentLineSplitted[4].c_str());
+				joint.position.y = (float)atof(currentLineSplitted[5].c_str());
+				joint.orientation.x = (float)atof(currentLineSplitted[8].c_str());
+				joint.orientation.z = (float)atof(currentLineSplitted[9].c_str());
+				joint.orientation.y = (float)atof(currentLineSplitted[10].c_str());
+				joint.orientation.w = GetWComponent(joint.orientation);
+
+				joints.push_back(joint);
 
 				i++;
 			}
@@ -478,8 +482,10 @@ private:
 	{
 		string currentLine;
 		bool isMeshesZone = false;
-		this->meshes = new Mesh[this->numMeshes];		
+		//this->meshes = new Mesh[this->numMeshes];		
 		int i = 0;
+		
+		Mesh *mesh = new Mesh();
 
 		while (getline(fileStream, currentLine) && i < this->numMeshes)
 		{
@@ -487,6 +493,8 @@ private:
 			{
 				if (currentLine == "}")
 				{
+					this->meshes.push_back(*mesh);
+					mesh = new Mesh();
 					isMeshesZone = false;
 					i++;
 					continue;
@@ -497,62 +505,76 @@ private:
 
 				if (currentLineSplitted[0] == "shader")
 				{
-					this->meshes[i].shader = currentLineSplitted[1];
-					TrimString(this->meshes[i].shader, "\"");
+					mesh->shader = currentLineSplitted[1];
+					TrimString(mesh->shader, "\"");
 				}
 				else if (currentLineSplitted[0] == "numverts")
 				{
-					this->meshes[i].numVertices = atoi(currentLineSplitted[1].c_str());
-					this->meshes[i].vertices = new Vertex[this->meshes[i].numVertices];
+					mesh->numVertices = atoi(currentLineSplitted[1].c_str());
+					//mesh->vertices = new Vertex[this->meshes[i].numVertices];
 
-					for (int j = 0; j < this->meshes[i].numVertices; j++)
+					for (int j = 0; j < mesh->numVertices; j++)
 					{
+						Vertex vertex;
 						getline(fileStream, currentLine);
 						string *vertLineSplitted = new string[8];
 						SplitString(currentLine, 8, vertLineSplitted);
 
-						this->meshes[i].vertices[j].vertexIndex = atoi(vertLineSplitted[1].c_str());
-						this->meshes[i].vertices[j].uv.x = (float)atof(vertLineSplitted[3].c_str());
-						this->meshes[i].vertices[j].uv.y = (float)atof(vertLineSplitted[4].c_str());
-						this->meshes[i].vertices[j].startWeight = atoi(vertLineSplitted[6].c_str());
-						this->meshes[i].vertices[j].countWeight = atoi(vertLineSplitted[7].c_str());
+						vertex.vertexIndex = atoi(vertLineSplitted[1].c_str());
+						vertex.uv.x = (float)atof(vertLineSplitted[3].c_str());
+						vertex.uv.y = (float)atof(vertLineSplitted[4].c_str());
+						vertex.startWeight = atoi(vertLineSplitted[6].c_str());
+						vertex.countWeight = atoi(vertLineSplitted[7].c_str());
+
+						mesh->vertices.push_back(vertex);
 					}
 				}
 				else if (currentLineSplitted[0] == "numtris")
 				{
-					this->meshes[i].numTriangles = atoi(currentLineSplitted[1].c_str());
-					this->meshes[i].triangles = new Triangle[this->meshes[i].numTriangles];
-					this->meshes[i].indices	  = new int[this->meshes[i].numTriangles * 3];
+					mesh->numTriangles = atoi(currentLineSplitted[1].c_str());
+					//mesh->triangles = new Triangle[this->meshes[i].numTriangles];
+					//mesh->indices	  = new int[this->meshes[i].numTriangles * 3];
 
-					for (int j = 0; j < this->meshes[i].numTriangles; j++)
+					for (int j = 0; j < mesh->numTriangles; j++)
 					{
+						Triangle triangle;
+						int indices[3];
+
 						getline(fileStream, currentLine);
 						string *triLineSplitted = new string[5];
 						SplitString(currentLine, 5, triLineSplitted);
 						
-						this->meshes[i].triangles[j].triangleIndex = atoi(triLineSplitted[1].c_str());
-						this->meshes[i].indices[j * 3] = this->meshes[i].triangles[j].vertexIndices[0] = atoi(triLineSplitted[2].c_str());
-						this->meshes[i].indices[j * 3 + 1] = this->meshes[i].triangles[j].vertexIndices[1] = atoi(triLineSplitted[3].c_str());
-						this->meshes[i].indices[j * 3 + 2] = this->meshes[i].triangles[j].vertexIndices[2] = atoi(triLineSplitted[4].c_str());
+						triangle.triangleIndex = atoi(triLineSplitted[1].c_str());
+						indices[0] = triangle.vertexIndices[0] = atoi(triLineSplitted[2].c_str());
+						indices[1] = triangle.vertexIndices[1] = atoi(triLineSplitted[3].c_str());
+						indices[2] = triangle.vertexIndices[2] = atoi(triLineSplitted[4].c_str());
+
+						mesh->triangles.push_back(triangle);
+						mesh->indices.push_back(indices[0]);
+						mesh->indices.push_back(indices[1]);
+						mesh->indices.push_back(indices[2]);
 					}
 				}
 				else if (currentLineSplitted[0] == "numweights")
 				{
-					this->meshes[i].numWeights = atoi(currentLineSplitted[1].c_str());
-					this->meshes[i].weights = new Weight[this->meshes[i].numWeights];
+					mesh->numWeights = atoi(currentLineSplitted[1].c_str());
+					//this->meshes[i].weights = new Weight[this->meshes[i].numWeights];
 
-					for (int j = 0; j < this->meshes[i].numWeights; j++)
+					for (int j = 0; j < mesh->numWeights; j++)
 					{
+						Weight weight;
 						getline(fileStream, currentLine);
 						string *weightLineSplitted = new string[9];
 						SplitString(currentLine, 9, weightLineSplitted);
 
-						this->meshes[i].weights[j].weightIndex = atoi(weightLineSplitted[1].c_str());
-						this->meshes[i].weights[j].joint = atoi(weightLineSplitted[2].c_str());
-						this->meshes[i].weights[j].bias = (float)atof(weightLineSplitted[3].c_str());
-						this->meshes[i].weights[j].position.x = (float)atof(weightLineSplitted[5].c_str());
-						this->meshes[i].weights[j].position.y = (float)atof(weightLineSplitted[6].c_str());
-						this->meshes[i].weights[j].position.z = (float)atof(weightLineSplitted[7].c_str());
+						weight.weightIndex = atoi(weightLineSplitted[1].c_str());
+						weight.joint = atoi(weightLineSplitted[2].c_str());
+						weight.bias = (float)atof(weightLineSplitted[3].c_str());
+						weight.position.x = (float)atof(weightLineSplitted[5].c_str());
+						weight.position.z = (float)atof(weightLineSplitted[6].c_str());
+						weight.position.y = (float)atof(weightLineSplitted[7].c_str());
+
+						mesh->weights.push_back(weight);
 					}
 				}
 			}
