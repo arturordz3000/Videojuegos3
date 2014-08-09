@@ -10,10 +10,12 @@ cbuffer constantBuffer : register(b0)
 
 struct VS_Input 
 {
-	float4 pos : POSITION;
+	float4 pos : POSITION0;
 	float2 tex0 : TEXCOORD0;
 	float3 normal : NORMAL0;
 	float3 tangent : TANGENT0;
+
+	int4 notUsed : BLENDINDICES0;
 };
 
 struct PS_Input 

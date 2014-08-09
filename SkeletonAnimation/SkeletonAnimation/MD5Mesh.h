@@ -171,7 +171,8 @@ public:
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },			  
 			{ "NORMAL",	 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 		};
 
 		unsigned int totalLayoutElements = ARRAYSIZE(solidColorLayout);
@@ -190,7 +191,7 @@ public:
 		}
 
 		// Compilando pixel shader
-		compileResult = CompileD3DShader("TestShader.fx", "PS_Main", "vs_4_0", &pixelShaderBlob);
+		compileResult = CompileD3DShader("Shaders\\TestShader.fx", "PS_Main", "ps_4_0", &pixelShaderBlob);
 		if ( !compileResult )
 			return false;
 
@@ -232,10 +233,11 @@ public:
 		deviceContext->IASetInputLayout( this->inputLayout );
 		deviceContext->VSSetShader( this->vertexShader, NULL, 0 );
 		deviceContext->PSSetShader( this->pixelShader, NULL, 0 );
+		deviceContext->UpdateSubresource( this->constantBuffer, 0, 0, &this->matrixBuffer, sizeof(MatrixBuffer), 0 );
 		deviceContext->VSSetConstantBuffers( 0, 1, &this->constantBuffer );
 		deviceContext->PSSetSamplers( 0, 1, &this->colorMapSampler );
 
-		UINT uiStride = 44;
+		UINT uiStride = sizeof (Vertex) - 4;
 		UINT uiOffset = 0;
 
 		for (int i = 0; i < numMeshes; i++)
@@ -243,7 +245,6 @@ public:
 			Mesh *currentMesh = &meshes[i];
 			
 			deviceContext->PSSetShaderResources( 0, 1, &currentMesh->colorMap );
-			deviceContext->UpdateSubresource(this->constantBuffer, 0, NULL, &this->matrixBuffer, 0, 0);
 			deviceContext->IASetVertexBuffers( 0, 1,  &currentMesh->vertexBuffer, &uiStride, &uiOffset );
 			deviceContext->IASetIndexBuffer( currentMesh->indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
 			deviceContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );	
@@ -277,7 +278,7 @@ private:
 			indexBufferDesc.MiscFlags = 0;
 
 			D3D11_SUBRESOURCE_DATA iinitData;
-			iinitData.pSysMem = &currentMesh->indices[0];
+			iinitData.pSysMem = currentMesh->indices;
 			result = device->CreateBuffer(&indexBufferDesc, &iinitData, &currentMesh->indexBuffer);
 
 			if ( FAILED(result) ) return false;
@@ -294,12 +295,12 @@ private:
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData; 
 			ZeroMemory( &vertexBufferData, sizeof(vertexBufferData) );
-			vertexBufferData.pSysMem = &currentMesh->vertices[0];
+			vertexBufferData.pSysMem = currentMesh->vertices;
 			result = device->CreateBuffer( &vertexBufferDesc, &vertexBufferData, &currentMesh->vertexBuffer);
 
 			if ( FAILED(result) ) return false;			
 
-			result = D3DX11CreateShaderResourceViewFromFile( device, (currentMesh->shader + ".tga").c_str(), 0, 0, &currentMesh->colorMap, 0 );
+			result = D3DX11CreateShaderResourceViewFromFile( device, ("C:\\Model\\" + currentMesh->shader).c_str(), 0, 0, &currentMesh->colorMap, 0 );
 
 			if( FAILED(result) ) return false;
 		}
@@ -338,6 +339,9 @@ private:
 		{
 			Vertex *currentVertex = &currentMesh->vertices[j];
 			currentVertex->position = XMFLOAT3(0, 0, 0);
+			currentVertex->normal	= XMFLOAT3(0, 0, 0);
+			currentVertex->tangent	= XMFLOAT3(0, 0, 0);
+			currentVertex->timesUsed = 0;
 
 			for (int k = 0; k < currentVertex->countWeight; k++)
 			{

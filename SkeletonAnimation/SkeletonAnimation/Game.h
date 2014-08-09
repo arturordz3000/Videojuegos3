@@ -75,7 +75,10 @@ public:
 	{
 		if ( InitWindowAndGraphics() )
 		{
-			_gameLevel = new SimpleRenderLevel(_device);
+			bool couldInitialize = true;
+			_gameLevel = new SimpleRenderLevel(_device, &couldInitialize);
+
+			if (!couldInitialize) return -1;
 
 			MSG message;
 
@@ -112,6 +115,7 @@ public:
 		_gameIsRunning = false;
 	}
 
+	GameLevel* GetGameLevel() { return this->_gameLevel; }
 private:
 	void ReleaseResources()
 	{
@@ -324,6 +328,28 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			g_Game->Exit();
 			PostQuitMessage(0);
+		} break;
+
+		case WM_KEYDOWN:
+		{
+			SimpleRenderLevel *gameLevel = (SimpleRenderLevel*)g_Game->GetGameLevel();
+			Camera *gameLevelCamera = gameLevel->GetCamera();
+
+			switch (wParam)
+			{
+				case VK_UP:
+					gameLevelCamera->MoveForward(deltaTime);
+					break;
+				case VK_DOWN:
+					gameLevelCamera->MoveBackward(deltaTime);
+					break;
+				case VK_RIGHT:
+					gameLevelCamera->MoveRight(deltaTime);
+					break;
+				case VK_LEFT:
+					gameLevelCamera->MoveLeft(deltaTime);
+					break;
+			}
 		} break;
 	}
 

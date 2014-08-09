@@ -21,10 +21,10 @@ private:
 	Camera *camera;
 
 public:
-	SimpleRenderLevel(ID3D11Device *device) : GameLevel(device)
+	SimpleRenderLevel(ID3D11Device *device, bool *couldInitialize) : GameLevel(device)
 	{
-		mesh = new MD5Mesh("C:\\Model\\bob_lamp_update.md5mesh");
-		mesh->PrepareGraphicResources(this->_device);
+		mesh = new MD5Mesh("C:\\Model\\boy.md5mesh");
+		*couldInitialize = mesh->PrepareGraphicResources(this->_device);
 
 		camera = new Camera(XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(.05f, .05f, .05f), 800, 640);
 	}
@@ -33,6 +33,8 @@ public:
 	{
 		delete mesh;
 	}
+
+	Camera* GetCamera() { return camera; }
 
 	void Update(float deltaTime)
 	{

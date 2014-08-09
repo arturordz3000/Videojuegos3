@@ -100,8 +100,8 @@ public:
 		this->rotationVelocity = rotationVelocity;
 
 		// Posicion inicial de la camara
-		XMFLOAT3 eye = XMFLOAT3(0.0f, 0.0f, -50.0f);
-		XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 1.0f);
+		XMFLOAT3 eye = XMFLOAT3(0.0f, 0.0f, -10.0f);
+		XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 2.0f);
 		XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		position = eye;
@@ -114,19 +114,29 @@ public:
 
 	XMMATRIX GetProjectionMatrix() { return projectionMatrix; }
 
-	void SetPositionY(float y)
+	void SetPosition(float x, float y, float z)
 	{
-		this->position.y = y;
+		SetPositionX(x);
+		SetPositionY(y);
+		SetPositionZ(z);
 	}
 
-	XMFLOAT3 GetPosition()
-	{
-		return this->position;
-	}
+	void SetPositionX(float x) { this->position.x = x; }
+
+	void SetPositionY(float y) { this->position.y = y; }
+
+	void SetPositionZ(float z) { this->position.z = z; }
+
+	XMFLOAT3 GetPosition() { return this->position;	}
 
 	void MoveForward()
 	{
 		this->TranslateCamera(movementVelocity.zVelocity);
+	}
+
+	void MoveForward(float deltaTime)
+	{
+		this->TranslateCamera(movementVelocity.zVelocity * deltaTime);
 	}
 
 	void MoveBackward()
@@ -134,9 +144,19 @@ public:
 		this->TranslateCamera(-movementVelocity.zVelocity);
 	}
 
+	void MoveBackward(float deltaTime)
+	{
+		this->TranslateCamera(-movementVelocity.zVelocity * deltaTime);
+	}
+
 	void MoveRight()
 	{
 		this->TranslateCamera(movementVelocity.xVelocity);
+	}
+
+	void MoveRight(float deltaTime)
+	{
+		this->TranslateCamera(movementVelocity.xVelocity * deltaTime);
 	}
 
 	void MoveLeft()
@@ -144,14 +164,29 @@ public:
 		this->TranslateCamera(-movementVelocity.xVelocity);
 	}
 
+	void MoveLeft(float deltaTime)
+	{
+		this->TranslateCamera(-movementVelocity.xVelocity * deltaTime);
+	}
+
 	void MoveUp()
 	{
 		this->TranslateCamera(movementVelocity.yVelocity);
 	}
 
+	void MoveUp(float deltaTime)
+	{
+		this->TranslateCamera(movementVelocity.yVelocity * deltaTime);
+	}
+
 	void MoveDown()
 	{
 		this->TranslateCamera(-movementVelocity.yVelocity);
+	}
+
+	void MoveDown(float deltaTime)
+	{
+		this->TranslateCamera(-movementVelocity.yVelocity * deltaTime);
 	}
 
 	void RotateOverXPositive()
