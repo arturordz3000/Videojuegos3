@@ -349,6 +349,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				case VK_LEFT:
 					gameLevelCamera->MoveLeft(deltaTime);
 					break;
+				case 'q': case 'Q':
+					gameLevelCamera->MoveUp(deltaTime);
+					break;
+				case 'a': case 'A':
+					gameLevelCamera->MoveDown(deltaTime);
+					break;
 			}
 		} break;
 	}

@@ -100,8 +100,8 @@ public:
 		this->rotationVelocity = rotationVelocity;
 
 		// Posicion inicial de la camara
-		XMFLOAT3 eye = XMFLOAT3(0.0f, 0.0f, -10.0f);
-		XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 2.0f);
+		XMFLOAT3 eye = XMFLOAT3(0.0f, 1.0f, -8.0f);
+		XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 1.0f);
 		XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		position = eye;

@@ -42,7 +42,6 @@ struct Vertex
 	int vertexIndex;
 	int startWeight;
 	int countWeight;
-
 	int timesUsed;
 };
 
@@ -173,7 +172,7 @@ public:
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },			  
 			{ "NORMAL",	 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
 			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+			//{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 		};
 
 		unsigned int totalLayoutElements = ARRAYSIZE(solidColorLayout);
@@ -223,7 +222,7 @@ public:
 
 	void Update(float deltaTime, Camera *camera)
 	{
-		this->world = XMMatrixTranslation(0, 0, 2);
+		this->world = XMMatrixTranslation(0, 3, 0) *  XMMatrixScaling( 0.04f, 0.04f, 0.04f );
 		matrixBuffer.world		= XMMatrixTranspose( this->world );
 		matrixBuffer.view		= camera->GetViewMatrix();
 		matrixBuffer.projection = camera->GetProjectionMatrix();
@@ -238,7 +237,7 @@ public:
 		deviceContext->VSSetConstantBuffers( 0, 1, &this->constantBuffer );
 		deviceContext->PSSetSamplers( 0, 1, &this->colorMapSampler );
 
-		UINT uiStride = sizeof (Vertex) - 4;
+		UINT uiStride = sizeof (Vertex);
 		UINT uiOffset = 0;
 
 		for (int i = 0; i < numMeshes; i++)
@@ -249,7 +248,7 @@ public:
 			deviceContext->IASetVertexBuffers( 0, 1,  &currentMesh->vertexBuffer, &uiStride, &uiOffset );
 			deviceContext->IASetIndexBuffer( currentMesh->indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
 			deviceContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );	
-			deviceContext->DrawIndexed( currentMesh->numTriangles * 3, 0, 0 );
+			deviceContext->DrawIndexed( currentMesh->indices.size(), 0, 0 );
 		}
 	}
 
