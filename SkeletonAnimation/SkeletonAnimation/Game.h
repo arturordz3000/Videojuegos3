@@ -3,10 +3,12 @@
 
 #define _XM_NO_INTRINSICS_
 
+#include <d3d11.h>
+#include <d3dx11.h>
+#include <d3dcompiler.h>
 #include "WinCreation.h"
 #include "GameLevel.h"
 #include "Util.h"
-#include <D3D11.h>
 
 extern HINSTANCE g_hInstance;
 extern HINSTANCE g_hPrevInstance;
@@ -132,7 +134,7 @@ private:
 
 	bool InitWindowAndGraphics()
 	{
-		_hWND = CreateForm(g_hInstance, "SkeletonExampleWindow", "Ejemplo Skeleton", WindowProc, _width, _height);
+		_hWND = CreateForm(g_hInstance, L"SkeletonExampleWindow", L"Ejemplo Skeleton", WindowProc, _width, _height);
 
 		HRESULT hResult;
 
@@ -244,7 +246,7 @@ private:
 		hResult = _device->CreateTexture2D(&depthTexDesc, NULL, &_depthTexture);
 		if(FAILED(hResult))
 		{
-			MessageBox(0, "Error", "Error al crear la DepthTexture", MB_OK);
+			MessageBox(0, L"Error", L"Error al crear la DepthTexture", MB_OK);
 			return false;
 		}
 
@@ -257,14 +259,14 @@ private:
 		hResult = _device->CreateDepthStencilView(_depthTexture, &descDSV, &_depthStencilView);
 		if(FAILED(hResult))
 		{
-			MessageBox(0, "Error", "Error al crear el depth stencil target view", MB_OK);
+			MessageBox(0, L"Error", L"Error al crear el depth stencil target view", MB_OK);
 			return false;
 		}
 
 		// Ligamos el render target al pipe line de Direct3D
 		_deviceContext->OMSetRenderTargets(1, &_targetView, _depthStencilView);
 
-		D3D11_DEPTH_STENCIL_DESC descDSD;
+		/*D3D11_DEPTH_STENCIL_DESC descDSD;
 		ZeroMemory(&descDSD, sizeof(descDSD));
 		descDSD.DepthEnable = true;
 		descDSD.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
@@ -287,7 +289,7 @@ private:
 			MessageBox(0, "Error", "Error al crear el depth stencil state", MB_OK);
 			return false;
 		}
-		_deviceContext->OMSetDepthStencilState(_depthStencilState, 1);
+		_deviceContext->OMSetDepthStencilState(_depthStencilState, 1);*/
 
 		return true;
 	}

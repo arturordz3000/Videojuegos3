@@ -6,8 +6,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <d3d11.h>
-#include <d3dx11.h>
 #include <xnamath.h>
 #include <vector>
 #include "Util.h"
@@ -50,6 +48,7 @@ private:
 	ID3D11InputLayout *inputLayout;
 	ID3D11Buffer *constantBuffer;
 	ID3D11SamplerState *colorMapSampler;
+	ID3D11RasterizerState* NoCulling;
 
 	ID3D11Buffer *vertexBuffer;
 	ID3D11Buffer *indexBuffer;
@@ -84,7 +83,7 @@ public:
 		bool compileResult;
 
 		// Compilando vertex shader
-		compileResult = CompileD3DShader("Shaders\\CubeShader.fx", "VS_Main", "vs_4_0", &vertexShaderBlob);
+		compileResult = CompileD3DShader(L"CubeShader.fx", "VS_Main", "vs_4_0", &vertexShaderBlob);
 		if ( !compileResult )
 			return false;
 
@@ -123,7 +122,7 @@ public:
 		}
 
 		// Compilando pixel shader
-		compileResult = CompileD3DShader("Shaders\\CubeShader.fx", "PS_Main", "ps_4_0", &pixelShaderBlob);
+		compileResult = CompileD3DShader(L"CubeShader.fx", "PS_Main", "ps_4_0", &pixelShaderBlob);
 		if ( !compileResult )
 			return false;
 
@@ -138,6 +137,13 @@ public:
 
 			return false;
 		}
+
+		D3D11_RASTERIZER_DESC rasterDesc;
+		ZeroMemory(&rasterDesc, sizeof(rasterDesc));
+		rasterDesc.CullMode = D3D11_CULL_MODE::D3D11_CULL_NONE;
+		rasterDesc.FillMode = D3D11_FILL_MODE::D3D11_FILL_SOLID;
+
+		d3dResult = device->CreateRasterizerState(&rasterDesc, &NoCulling);
 		
 		this->world = XMMatrixIdentity();
 
@@ -159,12 +165,19 @@ public:
 		static float rotation;
 		rotation += .001f;
 
-		this->world = XMMatrixRotationY( rotation ) * XMMatrixRotationX( rotation ) * XMMatrixTranslation(-2.0f, 0.0f, 0.0f);
-		XMVECTOR Eye = XMVectorSet( 0.0f, 3.0f, -6.0f, 0.0f );
-		XMVECTOR At = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
+		//this->world = XMMatrixRotationY( rotation ) * XMMatrixRotationX( rotation ) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+		/*XMVECTOR Eye = XMVectorSet( 0.0f, 0.0f, -6.0f, 0.0f );
+		XMVECTOR At = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
 		XMVECTOR Up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-		XMMATRIX viewMatrix = XMMatrixLookAtLH( Eye, At, Up );
-		XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV4, 784 / (FLOAT)562, 0.01f, 100.0f );
+		XMMATRIX viewMatrix = XMMatrixLookAtLH( Eye, At, Up );*/
+
+		XMFLOAT3 eye = XMFLOAT3(1.0f, 1.0f, -10.0f);
+		XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+
+		XMMATRIX viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
+
+		XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV4, 800.0f / (FLOAT)640, 0.1f, 1000.0f );
 
 		//this->world = XMMatrixTranslation(0, 0, 0) *  XMMatrixScaling( 1.0f, 1.0f, 1.0f );
 		matrixBuffer.world		= XMMatrixTranspose( this->world );
@@ -174,20 +187,23 @@ public:
 
 	void Draw(ID3D11DeviceContext *deviceContext)
 	{
-		deviceContext->IASetInputLayout( this->inputLayout );
-		deviceContext->VSSetShader( this->vertexShader, NULL, 0 );
-		deviceContext->PSSetShader( this->pixelShader, NULL, 0 );
-		deviceContext->UpdateSubresource( this->constantBuffer, 0, 0, &this->matrixBuffer, sizeof(MatrixBufferCube), 0 );
-		deviceContext->VSSetConstantBuffers( 0, 1, &this->constantBuffer );
-		deviceContext->PSSetSamplers( 0, 1, &this->colorMapSampler );
-
 		UINT uiStride = sizeof (VertexCube);
 		UINT uiOffset = 0;
-			
-		deviceContext->PSSetShaderResources( 0, 1, &colorMap );
-		deviceContext->IASetVertexBuffers( 0, 1,  &vertexBuffer, &uiStride, &uiOffset );
-		deviceContext->IASetIndexBuffer( indexBuffer, DXGI_FORMAT_R16_UINT, 0 );
-		deviceContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );	
+
+		deviceContext->RSSetState(NoCulling);
+		deviceContext->IASetInputLayout(this->inputLayout);
+		deviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &uiStride, &uiOffset);
+		deviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+		deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		deviceContext->VSSetShader( this->vertexShader, NULL, 0 );
+		deviceContext->PSSetShader(this->pixelShader, NULL, 0);
+		deviceContext->PSSetShaderResources(0, 1, &colorMap);
+		deviceContext->PSSetSamplers(0, 1, &this->colorMapSampler);
+
+		deviceContext->UpdateSubresource( this->constantBuffer, 0, 0, &this->matrixBuffer, sizeof(MatrixBufferCube), 0 );
+		deviceContext->VSSetConstantBuffers( 0, 1, &this->constantBuffer );
+
 		deviceContext->DrawIndexed( 36, 0, 0 );
 	}
 
@@ -287,7 +303,7 @@ private:
 
 		if ( FAILED(result) ) return false;			
 
-		result = D3DX11CreateShaderResourceViewFromFile( device, "p.jpg", 0, 0, &colorMap, 0 );
+		result = D3DX11CreateShaderResourceViewFromFile( device, L"p.jpg", 0, 0, &colorMap, 0 );
 
 		if( FAILED(result) ) return false;		
 

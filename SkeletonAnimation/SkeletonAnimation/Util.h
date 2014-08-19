@@ -3,11 +3,14 @@
 
 #define _XM_NO_INTRINSICS_
 
+#include <d3d11.h>
+#include <d3dx11.h>
+#include <d3dcompiler.h>
+#include <DxErr.h>
 #include <string>
 #include <sstream>
 #include <math.h>
 #include <xnamath.h>
-#include <D3Dcompiler.h>
 
 using namespace std;
 
@@ -55,12 +58,18 @@ void GetMonitorResolution(int *width, int *height)
 	}
 }
 
-bool CompileD3DShader(LPCSTR filePath, char* entry, char* shaderModel, ID3DBlob** buffer)
+bool CompileD3DShader(LPWSTR filePath, char* entry, char* shaderModel, ID3DBlob** buffer)
 {
 	DWORD shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 
 	ID3DBlob* errorBuffer = 0;
 	HRESULT result;
+
+	#if defined( DEBUG ) || defined( _DEBUG )
+		// Sirve para que el shader proveea de información
+		//para debugueo, pero sin afectar el rendimiento.
+		shaderFlags |= D3DCOMPILE_DEBUG;
+	#endif
 
 	result = D3DX11CompileFromFile(filePath, 0, 0, entry, shaderModel, shaderFlags,
 		0, 0, buffer, &errorBuffer, 0);

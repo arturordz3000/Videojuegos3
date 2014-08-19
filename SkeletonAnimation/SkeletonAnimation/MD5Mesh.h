@@ -149,7 +149,7 @@ public:
 		bool compileResult;
 
 		// Compilando vertex shader
-		compileResult = CompileD3DShader("Shaders\\TestShader.fx", "VS_Main", "vs_4_0", &vertexShaderBlob);
+		compileResult = CompileD3DShader(L"TestShader.fx", "VS_Main", "vs_4_0", &vertexShaderBlob);
 		if ( !compileResult )
 			return false;
 
@@ -191,7 +191,7 @@ public:
 		}
 
 		// Compilando pixel shader
-		compileResult = CompileD3DShader("Shaders\\TestShader.fx", "PS_Main", "ps_4_0", &pixelShaderBlob);
+		compileResult = CompileD3DShader(L"TestShader.fx", "PS_Main", "ps_4_0", &pixelShaderBlob);
 		if ( !compileResult )
 			return false;
 
@@ -300,7 +300,11 @@ private:
 
 			if ( FAILED(result) ) return false;			
 
-			result = D3DX11CreateShaderResourceViewFromFile( device, ("C:\\Model\\" + currentMesh->shader).c_str(), 0, 0, &currentMesh->colorMap, 0 );
+			string resourcePath = "C:\\Model\\" + currentMesh->shader;
+			std::wstring stemp = std::wstring(resourcePath.begin(), resourcePath.end());
+			LPCWSTR sw = stemp.c_str();
+
+			result = D3DX11CreateShaderResourceViewFromFile(device, sw, 0, 0, &currentMesh->colorMap, 0);
 
 			if( FAILED(result) ) return false;
 		}

@@ -2,11 +2,12 @@
 #define _WINCREATION_H_
 
 #include <Windows.h>
+#include <windowsx.h>
 #include <stdlib.h>
 
 extern int g_nCmdShow;
 
-HWND CreateForm(HINSTANCE hInstance, LPCSTR lpFormName, LPCSTR lpFormTitle, WNDPROC wndProc, int iWidth, int iHeight, bool isFullscreen = false)
+HWND CreateForm(HINSTANCE hInstance, LPWSTR lpFormName, LPWSTR lpFormTitle, WNDPROC wndProc, int iWidth, int iHeight, bool isFullscreen = false)
 {
 	DWORD windowStyle;
 
@@ -15,8 +16,10 @@ HWND CreateForm(HINSTANCE hInstance, LPCSTR lpFormName, LPCSTR lpFormTitle, WNDP
 	else
 		windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
 
-	WNDCLASSA wc;
+	WNDCLASSEX wc;
+	ZeroMemory(&wc, sizeof(WNDCLASSEX));
 
+	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_OWNDC;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -28,9 +31,9 @@ HWND CreateForm(HINSTANCE hInstance, LPCSTR lpFormName, LPCSTR lpFormTitle, WNDP
 	wc.hCursor = LoadCursor(hInstance, IDC_ARROW);
 	wc.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
 	
-	RegisterClass(&wc);
+	RegisterClassEx(&wc);
 
-	HWND hWnd = CreateWindow(wc.lpszClassName, lpFormTitle, windowStyle, 0, 0,
+	HWND hWnd = CreateWindowEx(NULL, wc.lpszClassName, lpFormTitle, windowStyle, 0, 0,
 		iWidth, iHeight, NULL, NULL, hInstance, NULL);
 
 	ShowWindow(hWnd, g_nCmdShow);

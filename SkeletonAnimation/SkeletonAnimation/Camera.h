@@ -112,7 +112,7 @@ public:
 		projectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, (FLOAT) width / (FLOAT) height, 0.01f, 1000.0f );
 	}
 
-	XMMATRIX GetProjectionMatrix() { return projectionMatrix; }
+	XMMATRIX GetProjectionMatrix() { return XMMatrixTranspose( projectionMatrix ); }
 
 	void SetPosition(float x, float y, float z)
 	{

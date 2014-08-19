@@ -46,11 +46,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="Shaders\TestShader.fx">
+    <None Include="CubeShader.fx">
       <Filter>Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="Shaders\CubeShader.fx">
+    </None>
+    <None Include="TestShader.fx">
       <Filter>Shaders</Filter>
-    </CustomBuild>
+    </None>
   </ItemGroup>
 </Project>
