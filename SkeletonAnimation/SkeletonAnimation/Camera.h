@@ -109,7 +109,7 @@ public:
 		viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
 		viewMatrix = XMMatrixTranspose( viewMatrix );
 
-		projectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, (FLOAT) width / (FLOAT) height, 0.01f, 1000.0f );
+		projectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV4, (FLOAT) width / (FLOAT) height, 0.01f, 1000.0f );
 	}
 
 	XMMATRIX GetProjectionMatrix() { return XMMatrixTranspose( projectionMatrix ); }
@@ -204,9 +204,19 @@ public:
 		this->RotateCamera(XMLoadFloat3( &XMFLOAT3(0.0f, 1.0f, 0.0f) ), rotationVelocity.y);
 	}
 
+	void RotateOverYPositive(float deltaTime)
+	{
+		this->RotateCamera(XMLoadFloat3( &XMFLOAT3(0.0f, 1.0f, 0.0f) ), rotationVelocity.y * deltaTime);
+	}
+
 	void RotateOverYNegative()
 	{
 		this->RotateCamera(XMLoadFloat3( &XMFLOAT3(0.0f, 1.0f, 0.0f) ), -rotationVelocity.y);
+	}
+
+	void RotateOverYNegative(float deltaTime)
+	{
+		this->RotateCamera(XMLoadFloat3( &XMFLOAT3(0.0f, 1.0f, 0.0f) ), -rotationVelocity.y * deltaTime);
 	}
 
 	void RotateOverZPositive(XMFLOAT3 vector)
