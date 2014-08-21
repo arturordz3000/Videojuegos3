@@ -45,12 +45,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="CubeShader.fx">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="TestShader.fx">
-      <Filter>Shaders</Filter>
-    </None>
-  </ItemGroup>
 </Project>

@@ -25,31 +25,24 @@ private:
 public:
 	SimpleRenderLevel(ID3D11Device *device, bool *couldInitialize) : GameLevel(device)
 	{
-		mesh = new MD5Mesh("C:\\Model\\boy.md5mesh");
-		//cube = new Cube();
-		*couldInitialize = mesh->PrepareGraphicResources(this->_device);
-		//*couldInitialize = cube->PrepareGraphicResources(this->_device);
-		//if ( *couldInitialize ) *couldInitialize = cube->PrepareGraphicResources(this->_device);
-
 		camera = new Camera(XMFLOAT3(10.0f, 10.0f, 10.0f), XMFLOAT3(3.0f, 3.0f, 3.0f), 800, 640);
+		mesh = new MD5Mesh("C:\\Model\\boy.md5mesh");
 	}
 
 	~SimpleRenderLevel()
 	{
-		//delete mesh;
+		
 	}
 
 	Camera* GetCamera() { return camera; }
 
 	void Update(float deltaTime)
 	{
-		mesh->Update(deltaTime, camera);
-		//cube->Update(deltaTime, camera);
+
 	}
 
 	void Draw(ID3D11DeviceContext *deviceContext)
 	{
-		mesh->Draw(deviceContext);
-		//cube->Draw(deviceContext);
+
 	}
 };

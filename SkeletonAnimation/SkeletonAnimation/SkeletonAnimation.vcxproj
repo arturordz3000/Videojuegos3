@@ -95,14 +95,6 @@
     <ClInclude Include="Util.h" />
     <ClInclude Include="WinCreation.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="CubeShader.fx">
-      <FileType>Text</FileType>
-    </None>
-    <None Include="TestShader.fx">
-      <FileType>Text</FileType>
-    </None>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
