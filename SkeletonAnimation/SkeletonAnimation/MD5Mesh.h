@@ -13,6 +13,7 @@
 #include "Util.h"
 #include "Game.h"
 #include "Camera.h"
+#include "MD5Anim.h"
 
 #pragma endregion
 
@@ -116,6 +117,8 @@ private:
 
 	MatrixBuffer matrixBuffer;
 
+	MD5Anim *animation;
+
 #pragma endregion
 
 #pragma region Public methods
@@ -125,7 +128,7 @@ public:
 	{
 		this->filename = filename;
 
-		ifstream fileStream(filename, ifstream::in);
+		ifstream fileStream(filename + ".md5mesh", ifstream::in);
 		
 		if (fileStream.is_open())
 		{
@@ -133,6 +136,8 @@ public:
 			ReadJoints(fileStream);
 			ReadMeshes(fileStream);
 		}
+
+		animation = new MD5Anim(filename);
 	}
 
 	~MD5Mesh()

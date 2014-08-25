@@ -25,7 +25,7 @@ private:
 public:
 	SimpleRenderLevel(ID3D11Device *device, bool *couldInitialize) : GameLevel(device)
 	{
-		mesh = new MD5Mesh("C:\\Model\\boy.md5mesh");
+		mesh = new MD5Mesh("C:\\Model\\boy");
 		//cube = new Cube();
 		*couldInitialize = mesh->PrepareGraphicResources(this->_device);
 		//*couldInitialize = cube->PrepareGraphicResources(this->_device);
