@@ -11,34 +11,9 @@
 #include "Util.h"
 #include "Game.h"
 #include "Camera.h"
+#include "Structs.h"
 
 using namespace std;
-
-struct HierarchyInfo
-{
-	string name;
-	int parent;
-	int flags;
-	int startIndex;
-};
-
-struct Bound
-{
-	XMFLOAT3 min;
-	XMFLOAT3 max;
-};
-
-struct BaseFrameInfo
-{
-	XMFLOAT3 position;
-	XMFLOAT4 orientation;
-};
-
-struct Frame
-{
-	int frameIndex;
-	vector<float> parameters;
-};
 
 class MD5Anim
 {
@@ -48,6 +23,10 @@ class MD5Anim
 	int numFrames;
 	int frameRate;
 	int numAnimatedComponents;
+
+	float frameTime;
+	float totalAnimationTime;
+	float currentAnimationTime;
 
 	vector<HierarchyInfo> hierarchy;
 	vector<Bound> bounds;
@@ -67,10 +46,81 @@ public:
 			ReadBounds(fileStream);
 			ReadBaseFrame(fileStream);
 			ReadFrames(fileStream);
+
+			ComputeTimes();
+			ComputeFrameSkeletons();
 		}
 	}
 
 private:
+	void ComputeTimes()
+	{
+		frameTime = 1.0f / frameRate;
+		totalAnimationTime = numFrames * frameTime;
+		currentAnimationTime = 0;
+	}
+
+	void ComputeFrameSkeletons()
+	{
+		for (int i = 0; i < numFrames; i++)
+		{
+			for (int j = 0; j < numJoints; j++)
+			{
+				int k = 0;
+				Joint currentJoint = BuildMeshJointWithAnimationInfo(&hierarchy[j], &baseFrame[j]);
+
+				if (hierarchy[j].flags & 1)
+					currentJoint.position.x = frames[i].parameters[hierarchy[j].startIndex + k++];
+				if (hierarchy[j].flags & 2)
+					currentJoint.position.z = frames[i].parameters[hierarchy[j].startIndex + k++];
+				if (hierarchy[j].flags & 4)
+					currentJoint.position.y = frames[i].parameters[hierarchy[j].startIndex + k++];
+				if (hierarchy[j].flags & 8)
+					currentJoint.orientation.x = frames[i].parameters[hierarchy[j].startIndex + k++];
+				if (hierarchy[j].flags & 16)
+					currentJoint.orientation.z = frames[i].parameters[hierarchy[j].startIndex + k++];
+				if (hierarchy[j].flags & 32)
+					currentJoint.orientation.y = frames[i].parameters[hierarchy[j].startIndex + k++];
+
+				currentJoint.orientation.w = GetWComponent(currentJoint.orientation);
+
+				if (hierarchy[j].parent >= 0)
+				{
+					Joint parentJoint = frames[i].skeleton[hierarchy[j].parent];
+					XMVECTOR parentJointOrientation = XMVectorSet(parentJoint.orientation.x, 
+																  parentJoint.orientation.y, 
+																  parentJoint.orientation.z, 
+																  parentJoint.orientation.w);
+					XMVECTOR currentJointPosition = XMVectorSet(currentJoint.position.x,
+																currentJoint.position.y,
+																currentJoint.position.z,
+																0);
+					XMVECTOR parentJointConjugatedOrientation = XMVectorSet(-parentJoint.orientation.x, 
+																  -parentJoint.orientation.y, 
+																  -parentJoint.orientation.z, 
+																  parentJoint.orientation.w);
+
+					XMFLOAT3 rotatedPosition;
+					XMStoreFloat3(&rotatedPosition, XMQuaternionMultiply(XMQuaternionMultiply(parentJointOrientation, currentJointPosition), parentJointConjugatedOrientation));
+
+					currentJoint.position.x = rotatedPosition.x + parentJoint.position.x;
+					currentJoint.position.y = rotatedPosition.y + parentJoint.position.y;
+					currentJoint.position.z = rotatedPosition.z + parentJoint.position.z;
+
+					XMVECTOR currentJointOrientation = XMVectorSet(currentJoint.orientation.x, 
+																   currentJoint.orientation.y,
+																   currentJoint.orientation.z, 
+																   currentJoint.orientation.w);
+					currentJointOrientation = XMQuaternionMultiply(parentJointOrientation, currentJointOrientation);
+					currentJointOrientation = XMQuaternionNormalize(currentJointOrientation);
+					XMStoreFloat4(&currentJoint.orientation, currentJointOrientation);
+				}
+				
+				frames[i].skeleton.push_back(currentJoint);
+			}
+		}
+	}
+
 	void ReadGlobalParameters(ifstream &fileStream)
 	{
 		string currentLine;
@@ -140,12 +190,12 @@ private:
 			SplitString(currentLine, 10, currentLineSplitted);
 			
 			bound.min.x = atof(currentLineSplitted[1].c_str());
-			bound.min.y = atof(currentLineSplitted[2].c_str());
-			bound.min.z = atof(currentLineSplitted[3].c_str());
+			bound.min.z = atof(currentLineSplitted[2].c_str());
+			bound.min.y = atof(currentLineSplitted[3].c_str());
 
 			bound.max.x = atof(currentLineSplitted[6].c_str());
-			bound.max.y = atof(currentLineSplitted[7].c_str());
-			bound.max.z = atof(currentLineSplitted[8].c_str());
+			bound.max.z = atof(currentLineSplitted[7].c_str());
+			bound.max.y = atof(currentLineSplitted[8].c_str());
 
 			bounds.push_back(bound);
 			delete[] currentLineSplitted;
@@ -168,12 +218,12 @@ private:
 			SplitString(currentLine, 10, currentLineSplitted);
 			
 			baseFrameInfo.position.x = atof(currentLineSplitted[1].c_str());
-			baseFrameInfo.position.y = atof(currentLineSplitted[2].c_str());
-			baseFrameInfo.position.z = atof(currentLineSplitted[3].c_str());
+			baseFrameInfo.position.z = atof(currentLineSplitted[2].c_str());
+			baseFrameInfo.position.y = atof(currentLineSplitted[3].c_str());
 
 			baseFrameInfo.orientation.x = atof(currentLineSplitted[6].c_str());
-			baseFrameInfo.orientation.y = atof(currentLineSplitted[7].c_str());
-			baseFrameInfo.orientation.z = atof(currentLineSplitted[8].c_str());
+			baseFrameInfo.orientation.z = atof(currentLineSplitted[7].c_str());
+			baseFrameInfo.orientation.y = atof(currentLineSplitted[8].c_str());
 			baseFrameInfo.orientation.w = GetWComponent(baseFrameInfo.orientation);
 
 			baseFrame.push_back(baseFrameInfo);

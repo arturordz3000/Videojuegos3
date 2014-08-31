@@ -11,6 +11,7 @@
 #include <sstream>
 #include <math.h>
 #include <xnamath.h>
+#include "Structs.h"
 
 using namespace std;
 
@@ -30,6 +31,17 @@ float GetWComponent(XMFLOAT4 q)
 {
 	float w = 1.0f - (q.x * q.x) - (q.y * q.y) - (q.z * q.z);
 	return w < 0 ? 0 : -sqrt(w);
+}
+
+Joint BuildMeshJointWithAnimationInfo(HierarchyInfo *sourceHierarchy, BaseFrameInfo *sourceBaseFrameInfo)
+{
+	Joint targetJoint;
+	targetJoint.name = sourceHierarchy->name;
+	targetJoint.parent = sourceHierarchy->parent;
+	targetJoint.position = sourceBaseFrameInfo->position;
+	targetJoint.orientation = sourceBaseFrameInfo->orientation;
+
+	return targetJoint;
 }
 
 void TrimString(string &input, string trimChar)

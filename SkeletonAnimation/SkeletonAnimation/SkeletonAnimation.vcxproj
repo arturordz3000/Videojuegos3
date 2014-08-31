@@ -93,6 +93,7 @@
     <ClInclude Include="GameLevel.h" />
     <ClInclude Include="MD5Anim.h" />
     <ClInclude Include="MD5Mesh.h" />
+    <ClInclude Include="Structs.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="WinCreation.h" />
   </ItemGroup>
