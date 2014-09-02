@@ -298,6 +298,8 @@ private:
 	{
 		/* Rutina de actualización */
 		_gameLevel->Update(deltaTime);
+
+		lastTickTime = GetTickCount();
 		
 		/* Rutina de dibujo */
 		float clearColor[4] = { 0.5f, 0.1f, 0.9f, 1.0f };
@@ -309,7 +311,6 @@ private:
 		/* Actualización de delta time */
 		DWORD currentTickTime = GetTickCount();
 		deltaTime = (float)(currentTickTime - lastTickTime) / 1000.0f;
-		lastTickTime = currentTickTime;
 
 	}
 };
