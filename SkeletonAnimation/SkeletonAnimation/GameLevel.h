@@ -1,7 +1,7 @@
 #include <D3D11.h>
 #include "Camera.h"
-#include "MD5Mesh.h"
 #include "Cube.h"
+#include "MD5Mesh.h"
 
 class GameLevel
 {
@@ -23,9 +23,9 @@ private:
 	Camera *camera;
 
 public:
-	SimpleRenderLevel(ID3D11Device *device, bool *couldInitialize) : GameLevel(device)
+	SimpleRenderLevel(ID3D11Device *device, ID3D11DeviceContext *deviceContext, bool *couldInitialize) : GameLevel(device)
 	{
-		mesh = new MD5Mesh("C:\\Model\\boy");
+		mesh = new MD5Mesh("C:\\Model\\boy", deviceContext);
 		//cube = new Cube();
 		*couldInitialize = mesh->PrepareGraphicResources(this->_device);
 		//*couldInitialize = cube->PrepareGraphicResources(this->_device);
@@ -49,7 +49,7 @@ public:
 
 	void Draw(ID3D11DeviceContext *deviceContext)
 	{
-		mesh->Draw(deviceContext);
+		mesh->Draw();
 		//cube->Draw(deviceContext);
 	}
 };

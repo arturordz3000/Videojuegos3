@@ -74,11 +74,11 @@ public:
 	}
 
 	int Run()
-	{
+	{		
 		if ( InitWindowAndGraphics() )
 		{
 			bool couldInitialize = true;
-			_gameLevel = new SimpleRenderLevel(_device, &couldInitialize);
+			_gameLevel = new SimpleRenderLevel(_device, _deviceContext, &couldInitialize);
 
 			if (!couldInitialize) return -1;
 
@@ -310,6 +310,7 @@ private:
 		DWORD currentTickTime = GetTickCount();
 		deltaTime = (float)(currentTickTime - lastTickTime) / 1000.0f;
 		lastTickTime = currentTickTime;
+
 	}
 };
 

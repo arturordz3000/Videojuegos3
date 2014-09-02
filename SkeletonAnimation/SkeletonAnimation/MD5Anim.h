@@ -52,7 +52,7 @@ public:
 		}
 	}
 
-private:
+public:
 	void ComputeTimes()
 	{
 		frameTime = 1.0f / frameRate;
@@ -118,6 +118,84 @@ private:
 				
 				frames[i].skeleton.push_back(currentJoint);
 			}
+		}
+	}
+
+	void UpdateModel(vector<Mesh>& meshes, float deltaTime, ID3D11DeviceContext *deviceContext)
+	{
+		currentAnimationTime += deltaTime;
+		if (currentAnimationTime > totalAnimationTime)
+			currentAnimationTime = 0;
+
+		float currentFrame = currentAnimationTime * frameRate;
+		int frame0 = floorf(currentFrame);
+		int frame1 = frame0 == numFrames - 1 ? 0 : frame0 + 1;
+
+		float interpolation = currentFrame - frame0;
+
+		vector<Joint> interpolatedSkeleton;
+
+		for (int i = 0; i < numJoints; i++)
+		{
+			Joint currentJoint;
+			Joint joint0 = frames[frame0].skeleton[i];
+			Joint joint1 = frames[frame1].skeleton[i];
+
+			currentJoint.parent = joint0.parent;
+
+			XMVECTOR joint0Orientation = XMVectorSet(joint0.orientation.x, joint0.orientation.y, joint0.orientation.z, joint0.orientation.w);
+			XMVECTOR joint1Orientation = XMVectorSet(joint1.orientation.x, joint1.orientation.y, joint1.orientation.z, joint1.orientation.w);
+
+			currentJoint.position.x = joint1.position.x * interpolation + (1 - interpolation) * joint0.position.x;
+			currentJoint.position.y = joint1.position.y * interpolation + (1 - interpolation) * joint0.position.y;
+			currentJoint.position.z = joint1.position.z * interpolation + (1 - interpolation) * joint0.position.z;
+
+			XMStoreFloat4(&currentJoint.orientation, XMQuaternionSlerp(joint0Orientation, joint1Orientation, interpolation));
+			interpolatedSkeleton.push_back(currentJoint);
+		}
+
+		for (int i = 0; i < meshes.size(); i++)
+		{
+			for (int j = 0; j < meshes[i].numVertices; j++)
+			{
+				Vertex currentVertex = meshes[i].vertices[j];
+				currentVertex.position = XMFLOAT3(0, 0, 0);
+				currentVertex.normal = XMFLOAT3(0, 0, 0);
+
+				for (int k = 0; k < currentVertex.countWeight; k++)
+				{
+					Weight currentWeight = meshes[i].weights[currentVertex.startWeight + k];
+					Joint interpolatedJoint = interpolatedSkeleton[currentWeight.joint];
+
+					XMVECTOR interpolatedJointOrientation = XMVectorSet(interpolatedJoint.orientation.x, 
+																		interpolatedJoint.orientation.y, 
+																		interpolatedJoint.orientation.z, 
+																		interpolatedJoint.orientation.w);
+					XMVECTOR currentWeightPosition = XMVectorSet(currentWeight.position.x,
+																 currentWeight.position.y,
+																 currentWeight.position.z,
+																 0);
+					XMVECTOR interpolatedJointConjugatedOrientation = XMVectorSet(-interpolatedJoint.orientation.x, 
+																		-interpolatedJoint.orientation.y, 
+																		-interpolatedJoint.orientation.z, 
+																		interpolatedJoint.orientation.w);
+
+					XMFLOAT3 rotatedPoint;
+					XMStoreFloat3(&rotatedPoint, XMQuaternionMultiply(XMQuaternionMultiply(interpolatedJointOrientation, currentWeightPosition),
+						interpolatedJointConjugatedOrientation));
+
+					currentVertex.position.x += (interpolatedJoint.position.x + rotatedPoint.x) * currentWeight.bias;
+					currentVertex.position.y += (interpolatedJoint.position.y + rotatedPoint.y) * currentWeight.bias;
+					currentVertex.position.z += (interpolatedJoint.position.z + rotatedPoint.z) * currentWeight.bias;
+				}
+
+				meshes[i].vertices[j] = currentVertex;
+			}
+
+			D3D11_MAPPED_SUBRESOURCE mappedVertexBuffer;
+			HRESULT hResult = deviceContext->Map(meshes[i].vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedVertexBuffer);
+			memcpy(mappedVertexBuffer.pData, &meshes[i].vertices[0], (sizeof(Vertex) * meshes[i].vertices.size()));
+			deviceContext->Unmap(meshes[i].vertexBuffer, 0);
 		}
 	}
 

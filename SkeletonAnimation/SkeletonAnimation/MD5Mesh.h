@@ -28,7 +28,7 @@ class MD5Mesh
 {
 #pragma region Private members
 
-private:
+public:
 	string filename;
 
 	int numJoints;
@@ -50,15 +50,19 @@ private:
 	MatrixBuffer matrixBuffer;
 
 	MD5Anim *animation;
+	ID3D11DeviceContext *deviceContext;
+	DWORD biggestUpdate;
 
 #pragma endregion
 
 #pragma region Public methods
 
 public:
-	MD5Mesh(string filename)
+	MD5Mesh(string filename, ID3D11DeviceContext *deviceContext)
 	{
 		this->filename = filename;
+		this->deviceContext = deviceContext;
+		biggestUpdate = 0;
 
 		ifstream fileStream(filename + ".md5mesh", ifstream::in);
 		
@@ -162,10 +166,21 @@ public:
 		this->world = XMMatrixTranslation(0, 3, 0) *  XMMatrixScaling( 0.04f, 0.04f, 0.04f );
 		matrixBuffer.world		= XMMatrixTranspose( this->world );
 		matrixBuffer.view		= camera->GetViewMatrix();
-		matrixBuffer.projection = camera->GetProjectionMatrix();
+		matrixBuffer.projection = camera->GetProjectionMatrix();		
+
+		DWORD start = GetTickCount();
+		animation->UpdateModel(this->meshes, deltaTime, deviceContext);
+		DWORD end = GetTickCount();
+
+		DWORD updateTime = end - start;
+
+		if (updateTime > biggestUpdate)
+			biggestUpdate = updateTime;
+
+		int debug = 0;
 	}
 
-	void Draw(ID3D11DeviceContext *deviceContext)
+	void Draw()
 	{
 		deviceContext->IASetInputLayout( this->inputLayout );
 		deviceContext->VSSetShader( this->vertexShader, NULL, 0 );
