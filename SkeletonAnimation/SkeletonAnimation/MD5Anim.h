@@ -187,6 +187,16 @@ public:
 					currentVertex.position.x += (interpolatedJoint.position.x + rotatedPoint.x) * currentWeight.bias;
 					currentVertex.position.y += (interpolatedJoint.position.y + rotatedPoint.y) * currentWeight.bias;
 					currentVertex.position.z += (interpolatedJoint.position.z + rotatedPoint.z) * currentWeight.bias;
+
+					XMVECTOR tempWeightNormal = XMVectorSet(currentWeight.normal.x, currentWeight.normal.y, currentWeight.normal.z, 0.0f);
+
+					// Rotate the normal
+					XMStoreFloat3(&rotatedPoint, XMQuaternionMultiply(XMQuaternionMultiply(interpolatedJointOrientation, tempWeightNormal), interpolatedJointConjugatedOrientation));
+
+					// Add to vertices normal and ake weight bias into account
+					currentVertex.normal.x -= rotatedPoint.x * currentWeight.bias;
+					currentVertex.normal.y -= rotatedPoint.y * currentWeight.bias;
+					currentVertex.normal.z -= rotatedPoint.z * currentWeight.bias;
 				}
 
 				meshes[i].vertices[j] = currentVertex;

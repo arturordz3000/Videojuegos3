@@ -374,6 +374,19 @@ private:
 			currentVertex->normal.x = XMVectorGetX(normalSum);
 			currentVertex->normal.y = XMVectorGetY(normalSum);
 			currentVertex->normal.z = XMVectorGetZ(normalSum);
+
+			XMVECTOR normal = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);		// Clear normal
+
+			for ( int k = 0; k < currentVertex->countWeight; k++)				// Loop through each of the vertices weights
+			{
+				Joint tempJoint = joints[currentMesh->weights[currentVertex->startWeight + k].joint];	// Get the joints orientation
+				XMVECTOR jointOrientation = XMVectorSet(tempJoint.orientation.x, tempJoint.orientation.y, tempJoint.orientation.z, tempJoint.orientation.w);
+
+				// Calculate normal based off joints orientation (turn into joint space)
+				normal = XMQuaternionMultiply(XMQuaternionMultiply(XMQuaternionInverse(jointOrientation), normalSum), jointOrientation);		
+
+				XMStoreFloat3(&currentMesh->weights[currentVertex->startWeight + k].normal, XMVector3Normalize(normal));			// Store the normalized quaternion into our weights normal
+			}
 		}
 	}
 
