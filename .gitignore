@@ -25,3 +25,9 @@ Debug/
 SkeletonAnimation/SkeletonAnimation.opensdf
 SkeletonAnimation/SkeletonAnimation.sdf
 SkeletonAnimation/ipch/skeletonanimation-fbe3df01/skeletonanimation-6d583b71.ipch
+UdpClient/UdpClient.opensdf
+UdpClient/UdpClient.sdf
+UdpClient/ipch/
+UdpServer/UdpServer.opensdf
+UdpServer/UdpServer.sdf
+UdpServer/ipch/
