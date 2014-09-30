@@ -38,7 +38,7 @@ public:
 		return true;
 	}
 
-	bool SendMessage(char *message, int messageLength)
+	bool SendMessageToEndPoint(char *message, int messageLength)
 	{
 		if (sendto(endPointSocket, message, strlen(message) , 0 , (sockaddr*) &endPoint, endPointInfoSize) == SOCKET_ERROR)
 			return false;
