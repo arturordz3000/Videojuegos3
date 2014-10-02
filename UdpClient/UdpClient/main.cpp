@@ -1,18 +1,34 @@
 #include <iostream>
 #include <conio.h>
 #include <WinSock2.h>
+#include "GameClient.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
 using namespace std;
 
-#define SERVER "127.0.0.1"
+#define SERVER "192.168.1.65"
 #define PORT 9999
-#define BUFFER_LENGTH 500
 
 int main()
 {
-	SOCKET					serverSocket;
+	g_GameClient = new GameClient(SERVER);
+	if (g_GameClient->Run())
+	{
+		while (true)
+		{
+			string message;
+
+			cout << "Escribe un mensaje al servidor: ";
+			cin >> message;
+			if (g_GameClient->SendDataToServer(message))
+				cout << endl << "Mensaje enviado!" << endl;
+		}
+	}
+
+	return 0;
+
+	/*SOCKET					serverSocket;
 	sockaddr_in				server;
 	int						serverInfoSize = sizeof(server);
 	char					message[BUFFER_LENGTH];	
@@ -54,5 +70,5 @@ int main()
 			_getch();		
 			exit(EXIT_FAILURE);
         }
-	}
+	}*/
 }

@@ -12,12 +12,16 @@ private:
 	WSADATA					wsa;
 	char *address;
 	int port;
+	BOOL bOptVal;
+    int bOptLen;
 
 public:
 	UdpClient(int *initResult)
 	{
 		*initResult = WSAStartup(MAKEWORD(2, 2), &wsa);
 		endPointInfoSize = sizeof(sockaddr_in);
+		bOptVal = TRUE;
+		bOptLen = sizeof (BOOL);
 	}
 
 	bool Bind(char *address, int port)
@@ -34,6 +38,9 @@ public:
 		endPoint.sin_family = AF_INET;
 		endPoint.sin_addr.S_un.S_addr = sAddr;
 		endPoint.sin_port = htons(port);
+		
+		if (sAddr == INADDR_BROADCAST)
+			setsockopt(endPointSocket, SOL_SOCKET, SO_BROADCAST, (char *) &bOptVal, bOptLen);
 
 		return true;
 	}

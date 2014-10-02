@@ -2,6 +2,7 @@
 #define _UDP_SERVER_H_
 
 #include <WinSock2.h>
+#pragma comment(lib, "ws2_32.lib")
 
 #define BUFFER_LENGTH 500
 
@@ -50,6 +51,22 @@ public:
 			return -1;
 		else
 			return receivedLength;
+	}
+
+	int WaitForData(char *buffer, sockaddr_in &pClientInfo)
+	{
+		memset(buffer, '\0', BUFFER_LENGTH);
+
+		int receivedLength = recvfrom(serverSocket, buffer, BUFFER_LENGTH, 0, (sockaddr*)&clientInfo, &clientInfoSize);
+		if (receivedLength == SOCKET_ERROR)
+		{
+			return -1;
+		}
+		else
+		{
+			pClientInfo = clientInfo;
+			return receivedLength;
+		}
 	}
 };
 
