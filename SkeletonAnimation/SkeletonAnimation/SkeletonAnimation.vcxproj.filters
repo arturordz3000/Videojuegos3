@@ -56,6 +56,9 @@
     <ClInclude Include="UdpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GameClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CubeShader.fx">

@@ -90,6 +90,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="GameClient.h" />
     <ClInclude Include="GameLevel.h" />
     <ClInclude Include="MD5Anim.h" />
     <ClInclude Include="MD5Mesh.h" />

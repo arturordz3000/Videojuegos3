@@ -1,13 +1,21 @@
+#pragma once
+
 #include <D3D11.h>
 #include "Camera.h"
 #include "Cube.h"
 #include "MD5Mesh.h"
-#include "UdpClient.h"
+#include "GameClient.h"
+#include "Util.h"
 #include <string>
 
 using namespace std;
 
 #define SEND_INTERVAL 1.0
+#define SERVER "127.0.0.1"
+
+class SimpleRenderLevel;
+DWORD WINAPI ReceiveData(LPVOID lpParam);
+SimpleRenderLevel *g_SharedLevel = NULL;
 
 class GameLevel
 {
@@ -28,16 +36,26 @@ private:
 	MD5Mesh *mesh2;
 	Cube *cube;
 	Camera *camera;
-	UdpClient *client;
+	GameClient *client;
 	float sendDeltaTime;
+
+	// Variables de prueba
+	float mesh2DeltaTime;
+	float mesh2Translation;
 
 public:
 	SimpleRenderLevel(ID3D11Device *device, ID3D11DeviceContext *deviceContext, bool *couldInitialize) : GameLevel(device)
 	{
+		g_SharedLevel = this;
+
+		mesh2Translation = -3;
+		mesh2DeltaTime = 0;
+
 		sendDeltaTime = 0;
-		int initResult = 0;
-		client = new UdpClient(&initResult);
-		client->Bind("127.0.0.1", 9999);
+
+		client = new GameClient(SERVER);
+		g_GameClient = client;
+		client->Run(ReceiveData);
 
 		mesh = new MD5Mesh("C:\\Model\\boy", deviceContext);
 		mesh2 = new MD5Mesh("C:\\Model\\boy", deviceContext);
@@ -60,7 +78,7 @@ public:
 		sendDeltaTime += deltaTime;
 
 		mesh->Update(deltaTime, camera, -3);
-		mesh2->Update(deltaTime, camera, 3);
+		mesh2->Update(mesh2DeltaTime, camera, mesh2Translation);
 
 		ostringstream stringStream;
 		stringStream << deltaTime << "," << mesh->translation.x << "," << mesh->translation.y << "," << mesh->translation.z;
@@ -68,17 +86,36 @@ public:
 
 		if (sendDeltaTime > SEND_INTERVAL)
 		{
-			client->SendMessageToEndPoint((char*)message.c_str(), message.length());
+			client->SendDataToServer(message);
 			sendDeltaTime = 0;
 		}
-
-		//cube->Update(deltaTime, camera);
 	}
 
 	void Draw(ID3D11DeviceContext *deviceContext)
 	{
 		mesh->Draw();
 		mesh2->Draw();
-		//cube->Draw(deviceContext);
 	}
+
+	void UpdatePlayersData(map<string, string> clientsData)
+	{
+		if (clientsData.size() > 0)
+		{
+			map<string, string>::iterator it = clientsData.begin();
+			vector<string> secondPlayerData = SplitString(it->second, ",");
+			mesh2DeltaTime = stof(secondPlayerData[0]);
+			mesh2Translation = stof(secondPlayerData[1]);
+		}
+	}	
 };
+
+DWORD WINAPI ReceiveData(LPVOID lpParam)
+{
+	while (g_GameClient->canRun)
+	{
+		g_GameClient->ReceiveData();
+		g_SharedLevel->UpdatePlayersData(g_GameClient->clientsData);
+	}
+
+	return 0;
+}

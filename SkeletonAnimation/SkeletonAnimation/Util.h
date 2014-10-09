@@ -11,6 +11,7 @@
 #include <sstream>
 #include <math.h>
 #include <xnamath.h>
+#include <vector>
 #include "Structs.h"
 
 using namespace std;
@@ -25,6 +26,21 @@ void SplitString(string inputString, int parts, string *output)
 		inputStringStream >> output[i];
 		i++;
 	}
+}
+
+vector<string> SplitString(string inputString, string delimiter)
+{
+	vector<string> splittedString;
+	int delimiterPosition = 0;
+
+	while ((delimiterPosition = inputString.find(delimiter)) != string::npos)
+	{
+		string part = inputString.substr(0, delimiterPosition);
+		splittedString.push_back(part);
+		inputString.erase(0, delimiterPosition + delimiter.length());
+	}
+
+	return splittedString;
 }
 
 float GetWComponent(XMFLOAT4 q)
