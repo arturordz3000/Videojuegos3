@@ -76,6 +76,8 @@ public:
 		else
 			it->second = data;
 
+		cout << buffer << endl;
+
 		return receivedData;
 	}
 

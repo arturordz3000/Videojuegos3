@@ -163,7 +163,28 @@ public:
 
 	void Update(float deltaTime, Camera *camera)
 	{
-		this->world = XMMatrixTranslation(0, 3, 0) *  XMMatrixScaling( 0.04f, 0.04f, 0.04f );
+		this->world = XMMatrixScaling( 0.04f, 0.04f, 0.04f ) * XMMatrixTranslation(0, 0, 0);
+		matrixBuffer.world		= XMMatrixTranspose( this->world );
+		matrixBuffer.view		= camera->GetViewMatrix();
+		matrixBuffer.projection = camera->GetProjectionMatrix();		
+
+		DWORD start = GetTickCount();
+		animation->UpdateModel(this->meshes, deltaTime, deviceContext);
+		DWORD end = GetTickCount();
+
+		DWORD updateTime = end - start;
+
+		if (updateTime > biggestUpdate)
+			biggestUpdate = updateTime;
+
+		int debug = 0;
+	}
+
+	void Update(float deltaTime, Camera *camera, float translation)
+	{
+		this->translation = XMFLOAT3(translation, 0, 0);
+
+		this->world = XMMatrixScaling( 0.04f, 0.04f, 0.04f ) * XMMatrixTranslation(translation, 0, 0);
 		matrixBuffer.world		= XMMatrixTranspose( this->world );
 		matrixBuffer.view		= camera->GetViewMatrix();
 		matrixBuffer.projection = camera->GetProjectionMatrix();		
