@@ -94,6 +94,8 @@
     <ClInclude Include="GameLevel.h" />
     <ClInclude Include="MD5Anim.h" />
     <ClInclude Include="MD5Mesh.h" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="ParticleEmitter.h" />
     <ClInclude Include="Structs.h" />
     <ClInclude Include="UdpClient.h" />
     <ClInclude Include="UdpServer.h" />

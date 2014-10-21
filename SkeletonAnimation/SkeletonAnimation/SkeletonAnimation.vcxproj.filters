@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{c8aa8998-453c-4086-a61e-8742b0ce12fb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\SimpleParticleSystem">
+      <UniqueIdentifier>{5767cc55-10e5-496d-ba09-119f6c98fbf6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -58,6 +61,12 @@
     </ClInclude>
     <ClInclude Include="GameClient.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleEmitter.h">
+      <Filter>Header Files\SimpleParticleSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle.h">
+      <Filter>Header Files\SimpleParticleSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
