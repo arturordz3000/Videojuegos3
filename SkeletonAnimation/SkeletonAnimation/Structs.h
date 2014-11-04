@@ -110,4 +110,15 @@ struct Frame
 
 #pragma endregion
 
+
+#pragma region Particle Substructures
+
+struct ParticleComponent
+{
+	XMFLOAT3 pos;
+	XMFLOAT4 color;
+};
+
+#pragma endregion
+
 #endif

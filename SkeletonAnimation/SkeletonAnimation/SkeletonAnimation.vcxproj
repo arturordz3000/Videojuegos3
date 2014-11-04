@@ -106,6 +106,7 @@
     <None Include="CubeShader.fx">
       <FileType>Text</FileType>
     </None>
+    <None Include="ParticleShader.fx" />
     <None Include="TestShader.fx">
       <FileType>Text</FileType>
     </None>

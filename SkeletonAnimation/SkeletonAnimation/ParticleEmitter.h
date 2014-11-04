@@ -38,8 +38,8 @@ private:
 	ID3D11PixelShader*	pixelShader;
 
 	ID3D11InputLayout*	inputLayout;
-	ID3D11Buffer*		vertexBuffer;
 	
+	ID3D11Device *device;
 	ID3D11DeviceContext *deviceContext;
 
 public:
@@ -80,13 +80,19 @@ public:
 	}
 
 	void Draw()
-	{		
+	{
+		deviceContext->IASetInputLayout( inputLayout );
+		deviceContext->VSSetShader( vertexShader, 0, 0 );
+		deviceContext->PSSetShader( pixelShader, 0, 0 );
+
 		for(vector<Particle>::iterator it = particles.begin(); it != particles.end(); it++)
 			it->Draw();
 	}
 
 	bool PrepareGraphicResources(ID3D11Device *device)
 	{
+		this->device = device;
+
 		if ( !CompileShaders(device) )
 			return false;
 
@@ -110,9 +116,10 @@ public:
 		float b = 1.0f / (rand() % 255);
 
 		Particle newParticle(this->deviceContext, this->position, 1, 
-			XMFLOAT4(r, g, b, 1.0f), this->particleLifeSpan, XMFLOAT3(randomXVelocity, randomYVelocity, 0));
-
-		this->particles.push_back(newParticle);
+			XMFLOAT4(1, 1, 1, 1.0f), this->particleLifeSpan, XMFLOAT3(randomXVelocity, randomYVelocity, 0));
+		
+		if (newParticle.CreateDirectXResources(this->device))
+			this->particles.push_back(newParticle);
 	}
 
 private:
@@ -144,6 +151,7 @@ private:
 		D3D11_INPUT_ELEMENT_DESC solidColorLayout[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
 		unsigned int totalLayoutElements = ARRAYSIZE(solidColorLayout);

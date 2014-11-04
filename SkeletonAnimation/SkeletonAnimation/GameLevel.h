@@ -15,7 +15,7 @@ using namespace std;
 #define SERVER "127.0.0.1"
 #define MAX_PARTICLES 2000
 #define PARTICLE_LIFE_SPAN 1.5f
-#define PARTICLE_INSTANTIATION_INTERVAL 0.01f
+#define PARTICLE_INSTANTIATION_INTERVAL 0.001f
 
 class SimpleRenderLevel;
 DWORD WINAPI ReceiveData(LPVOID lpParam);
@@ -54,6 +54,7 @@ public:
 		g_SharedLevel = this;
 		particleEmitter = new ParticleEmitter(deviceContext, XMFLOAT3(0, 0, 0), MAX_PARTICLES, 
 			PARTICLE_INSTANTIATION_INTERVAL, PARTICLE_LIFE_SPAN); 
+		particleEmitter->PrepareGraphicResources(device);
 
 #pragma region Codigo no usado
 		/*mesh2Translation = -3;
@@ -63,12 +64,12 @@ public:
 
 		client = new GameClient(SERVER);
 		g_GameClient = client;
-		client->Run(ReceiveData);
+		client->Run(ReceiveData);*/
 		mesh = new MD5Mesh("C:\\Model\\boy", deviceContext);
-		mesh2 = new MD5Mesh("C:\\Model\\boy", deviceContext);
+		/*mesh2 = new MD5Mesh("C:\\Model\\boy", deviceContext);*/
 
 		*couldInitialize = mesh->PrepareGraphicResources(this->_device);
-		*couldInitialize = mesh2->PrepareGraphicResources(this->_device);*/
+		/**couldInitialize = mesh2->PrepareGraphicResources(this->_device);*/
 #pragma endregion
 
 		camera = new Camera(XMFLOAT3(10.0f, 10.0f, 10.0f), XMFLOAT3(3.0f, 3.0f, 3.0f), 800, 640);
@@ -87,8 +88,8 @@ public:
 		
 		particleEmitter->Update(deltaTime, camera);
 #pragma region Codigo no usado
-		/*mesh->Update(deltaTime, camera, -3);
-		mesh2->Update(mesh2DeltaTime, camera, mesh2Translation);
+		mesh->Update(deltaTime, camera, -3);
+		/*mesh2->Update(mesh2DeltaTime, camera, mesh2Translation);
 
 		ostringstream stringStream;
 		stringStream << deltaTime << "," << mesh->translation.x << "," << mesh->translation.y << "," << mesh->translation.z;
@@ -106,8 +107,8 @@ public:
 	{
 		particleEmitter->Draw();
 #pragma region Codigo no usado
-		/*mesh->Draw();
-		mesh2->Draw();*/
+		mesh->Draw();
+		/*mesh2->Draw();*/
 #pragma endregion
 	}
 

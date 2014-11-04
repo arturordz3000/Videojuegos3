@@ -300,7 +300,7 @@ private:
 		_gameLevel->Update(deltaTime);
 		
 		/* Rutina de dibujo */
-		float clearColor[4] = { 0.5f, 0.1f, 0.9f, 1.0f };
+		float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		_deviceContext->ClearRenderTargetView( _targetView, clearColor );
 		_deviceContext->ClearDepthStencilView( _depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0 );
 		_gameLevel->Draw(_deviceContext);
