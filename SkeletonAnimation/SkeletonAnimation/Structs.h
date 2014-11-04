@@ -76,6 +76,15 @@ struct MatrixBuffer
 	XMMATRIX projection;
 };
 
+struct ParticleBuffer
+{
+	XMMATRIX world;
+	XMMATRIX view;
+	XMMATRIX projection;
+	float uvOffset;
+	XMFLOAT3 padding;
+};
+
 #pragma endregion
 
 #pragma region Animation Substructures
@@ -117,6 +126,7 @@ struct ParticleComponent
 {
 	XMFLOAT3 pos;
 	XMFLOAT4 color;
+	XMFLOAT2 uv;
 };
 
 #pragma endregion

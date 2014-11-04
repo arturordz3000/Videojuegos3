@@ -26,11 +26,12 @@ private:
 	XMFLOAT4			color;
 	float				lifeSpan;
 	float				timeAlive;
+	float				uvUnitsPerSecond;
 	XMFLOAT3			velocity;
 	ID3D11DeviceContext *deviceContext;
 	ID3D11Buffer*		vertexBuffer;
-	ID3D11Buffer*		matrixBufferCB;
-	MatrixBuffer*		matrices; 
+	ID3D11Buffer*		particleBufferCB;
+	ParticleBuffer*		particleBuffer; 
 
 public:
 	Particle(ID3D11DeviceContext *deviceContext, 
@@ -41,6 +42,7 @@ public:
 		this->halfSize = size / 2.0f;
 		this->color = color;
 		this->lifeSpan = lifeSpan;
+		this->uvUnitsPerSecond = 1.0f / this->lifeSpan;
 		this->velocity = velocity;
 		this->deviceContext = deviceContext;
 		this->timeAlive = 0;
@@ -52,10 +54,10 @@ public:
 
 		ParticleComponent vertices[] =
 		{
-			{ XMFLOAT3(-halfSize, -halfSize, 0.0f), color },
-			{ XMFLOAT3(-halfSize, halfSize, 0.0f), color },
-			{ XMFLOAT3(halfSize, -halfSize, 0.0f), color },
-			{ XMFLOAT3(halfSize, halfSize, 0.0f), color },
+			{ XMFLOAT3(-halfSize, -halfSize, 0.0f), color, XMFLOAT2(0, 1) },
+			{ XMFLOAT3(-halfSize, halfSize, 0.0f), color, XMFLOAT2(0, 0) },
+			{ XMFLOAT3(halfSize, -halfSize, 0.0f), color, XMFLOAT2(0.1666666f, 1) },
+			{ XMFLOAT3(halfSize, halfSize, 0.0f), color, XMFLOAT2(0.1666666f, 0) },
 		};
 
 		D3D11_BUFFER_DESC vertexDesc;
@@ -79,17 +81,17 @@ public:
 		D3D11_BUFFER_DESC constDesc;
 		ZeroMemory( &constDesc, sizeof( constDesc ) );
 		constDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		constDesc.ByteWidth = sizeof( MatrixBuffer );
+		constDesc.ByteWidth = sizeof( ParticleBuffer );
 		constDesc.Usage = D3D11_USAGE_DEFAULT;
 
-		d3dResult = d3dDevice->CreateBuffer( &constDesc, 0, &matrixBufferCB );
+		d3dResult = d3dDevice->CreateBuffer( &constDesc, 0, &particleBufferCB );
 
 		if( FAILED( d3dResult ) )
 		{
 			MessageBox(0, L"Error", L"Error al crear constant buffer", MB_OK);
 			return false;
 		}
-		matrices = new MatrixBuffer;
+		particleBuffer = new ParticleBuffer;
 	}
 
 	void Update(float deltaTime, Camera *camera)
@@ -102,9 +104,13 @@ public:
 		XMMATRIX translate;
 		translate = XMMatrixTranslation(this->position.x, this->position.y, this->position.z);
 
-		matrices->world = XMMatrixTranspose(translate);
-		matrices->view = camera->GetViewMatrix();
-		matrices->projection = camera->GetProjectionMatrix();
+		particleBuffer->world = XMMatrixTranspose(translate);
+		particleBuffer->view = camera->GetViewMatrix();
+		particleBuffer->projection = camera->GetProjectionMatrix();
+		
+		int spriteIndex = (int)(this->uvUnitsPerSecond * this->timeAlive / 0.1666666f);
+		particleBuffer->uvOffset = 0.1666666f * (spriteIndex - 1);
+		particleBuffer->uvOffset = particleBuffer->uvOffset < 0 ? 0 : particleBuffer->uvOffset;
 	}
 
 	void Draw()
@@ -115,8 +121,9 @@ public:
 		deviceContext->IASetVertexBuffers( 0, 1, &vertexBuffer, &stride, &offset );
 		deviceContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
 
-		deviceContext->UpdateSubresource( matrixBufferCB, 0, 0, matrices, sizeof(MatrixBuffer), 0 );
-		deviceContext->VSSetConstantBuffers( 0, 1, &matrixBufferCB );
+		deviceContext->UpdateSubresource( particleBufferCB, 0, 0, particleBuffer, sizeof(ParticleBuffer), 0 );
+		deviceContext->VSSetConstantBuffers( 0, 1, &particleBufferCB );
+		deviceContext->PSSetConstantBuffers( 0, 1, &particleBufferCB );
 
 		deviceContext->Draw(4,0);
 	}

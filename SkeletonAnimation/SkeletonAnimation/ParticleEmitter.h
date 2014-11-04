@@ -10,6 +10,7 @@
 #include <d3dx11.h>
 #include <xnamath.h>
 #include <vector>
+#include <random>
 #include <time.h>
 #include "Util.h"
 #include "Game.h"
@@ -21,7 +22,8 @@ using namespace std;
 
 #pragma endregion
 
-#define MAX_PARTICLE_VELOCITY 5
+#define MAX_PARTICLE_VELOCITY 2
+#define TO_RADIANS 3.141592 / 180
 
 class ParticleEmitter
 {
@@ -38,6 +40,9 @@ private:
 	ID3D11PixelShader*	pixelShader;
 
 	ID3D11InputLayout*	inputLayout;
+	ID3D11ShaderResourceView *colorMap;
+	ID3D11SamplerState *colorMapSampler;
+	ID3D11BlendState *alphaBlendState, *commonBlendState;
 	
 	ID3D11Device *device;
 	ID3D11DeviceContext *deviceContext;
@@ -82,18 +87,22 @@ public:
 	void Draw()
 	{
 		deviceContext->IASetInputLayout( inputLayout );
+		deviceContext->PSSetShaderResources(0, 1, &colorMap);
+		deviceContext->PSSetSamplers(0, 1, &this->colorMapSampler);
 		deviceContext->VSSetShader( vertexShader, 0, 0 );
 		deviceContext->PSSetShader( pixelShader, 0, 0 );
 
+		TurnOnAlphaBlending();
 		for(vector<Particle>::iterator it = particles.begin(); it != particles.end(); it++)
 			it->Draw();
+		TurnOffAlphaBlending();
 	}
 
 	bool PrepareGraphicResources(ID3D11Device *device)
 	{
 		this->device = device;
 
-		if ( !CompileShaders(device) )
+		if ( !CompileShaders(device) || !CreateDirectXResources() )
 			return false;
 
 		return true;
@@ -103,26 +112,106 @@ public:
 	{
 		if (particles.size() > this->maxParticles) return;
 
-		srand(time(NULL));
-		float randomXVelocity = rand() % MAX_PARTICLE_VELOCITY;
-		srand(time(NULL));
-		float randomYVelocity = rand() % MAX_PARTICLE_VELOCITY;
+		std::random_device rd;
 
-		srand(time(NULL));
-		float r = 1.0f / (rand() % 255);
-		srand(time(NULL));
-		float g = 1.0f / (rand() % 255);
-		srand(time(NULL));
-		float b = 1.0f / (rand() % 255);
+		float maxAngle = 20 / 4294967295.0f;
+		maxAngle = (rd() * maxAngle) + 80;
+		maxAngle *= TO_RADIANS;
 
-		Particle newParticle(this->deviceContext, this->position, 1, 
-			XMFLOAT4(1, 1, 1, 1.0f), this->particleLifeSpan, XMFLOAT3(randomXVelocity, randomYVelocity, 0));
+
+		float randomXVelocity = MAX_PARTICLE_VELOCITY * cos(maxAngle);
+		float randomYVelocity = MAX_PARTICLE_VELOCITY * sin(maxAngle);
+
+		float maxColor = 1.0f / 4294967295.0f;
+
+		float r = maxColor * rd();
+		float g = maxColor * rd();
+		float b = maxColor * rd();
+
+		Particle newParticle(this->deviceContext, this->position, 0.7, 
+			XMFLOAT4(r, g, b, 1.0f), this->particleLifeSpan, XMFLOAT3(randomXVelocity, randomYVelocity, 0));
 		
 		if (newParticle.CreateDirectXResources(this->device))
 			this->particles.push_back(newParticle);
 	}
 
 private:
+	//Activa el alpha blend para dibujar con transparencias
+	void TurnOnAlphaBlending()
+	{
+		float blendFactor[4];
+		blendFactor[0] = 1.0f;
+		blendFactor[1] = 1.0f;
+		blendFactor[2] = 1.0f;
+		blendFactor[3] = 1.0f;
+
+		deviceContext->OMSetBlendState(alphaBlendState, blendFactor, 0xffffffff);
+	}
+
+	//Regresa al blend normal(solido)
+	void TurnOffAlphaBlending()
+	{
+		deviceContext->OMSetBlendState(commonBlendState, NULL, 0xffffffff);
+	}
+
+	bool CreateDirectXResources()
+	{
+		HRESULT result = D3DX11CreateShaderResourceViewFromFile( device, L"smoke.png", 0, 0, &colorMap, 0 );
+		if( FAILED(result) ) return false;
+
+		D3D11_SAMPLER_DESC colorMapDesc;
+		ZeroMemory( &colorMapDesc, sizeof( colorMapDesc ) );
+		colorMapDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		colorMapDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		colorMapDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		colorMapDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		colorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		colorMapDesc.MinLOD = 0;
+		colorMapDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		result = device->CreateSamplerState( &colorMapDesc, &colorMapSampler );
+
+		if( FAILED(result) ) return false;
+
+		D3D11_BLEND_DESC descCBSD;
+		ZeroMemory(&descCBSD, sizeof(D3D11_BLEND_DESC));
+		descCBSD.RenderTarget[0].BlendEnable = FALSE;
+		descCBSD.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+		descCBSD.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		descCBSD.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		descCBSD.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		descCBSD.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		descCBSD.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		descCBSD.RenderTarget[0].RenderTargetWriteMask = 0x0f;
+
+		result = device->CreateBlendState(&descCBSD, &commonBlendState);
+		if(FAILED(result))
+		{
+			MessageBox(0, L"Error", L"Error al crear el blend state", MB_OK);
+			return false;
+		}
+
+		D3D11_BLEND_DESC descABSD;
+		ZeroMemory(&descABSD, sizeof(D3D11_BLEND_DESC));
+		descABSD.RenderTarget[0].BlendEnable = TRUE;
+		descABSD.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+		descABSD.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+		descABSD.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		descABSD.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		descABSD.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		descABSD.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		descABSD.RenderTarget[0].RenderTargetWriteMask = 0x0f;
+
+		result = device->CreateBlendState(&descABSD, &alphaBlendState);
+		if(FAILED(result))
+		{
+			MessageBox(0, L"Error", L"Error al crear el blend state", MB_OK);
+			return false;
+		}
+
+		return true;
+	}
+
 	bool CompileShaders(ID3D11Device *device)
 	{
 		ID3DBlob *vertexShaderBlob;
@@ -152,6 +241,7 @@ private:
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
 		unsigned int totalLayoutElements = ARRAYSIZE(solidColorLayout);

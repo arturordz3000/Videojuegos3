@@ -14,8 +14,8 @@ using namespace std;
 #define SEND_INTERVAL 1.0
 #define SERVER "127.0.0.1"
 #define MAX_PARTICLES 2000
-#define PARTICLE_LIFE_SPAN 1.5f
-#define PARTICLE_INSTANTIATION_INTERVAL 0.001f
+#define PARTICLE_LIFE_SPAN 2.0f
+#define PARTICLE_INSTANTIATION_INTERVAL 0.01f
 
 class SimpleRenderLevel;
 DWORD WINAPI ReceiveData(LPVOID lpParam);
